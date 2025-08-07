@@ -1,0 +1,25 @@
+{
+  "name": "email-dispacher",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "ts-node src/main.ts",
+    "start": "node dist/main.js",
+    "package": "npm run build && npm prune --production && zip -r lambda.zip dist/handler.js node_modules package.json"
+  },
+  "keywords": [],
+  "author": "Simone De Cristofaro",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "nodemailer": "^7.0.5"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.152",
+    "@types/node": "^24.2.0",
+    "@types/nodemailer": "^6.4.17",
+    "dotenv": "^17.2.1",
+    "typescript": "^5.9.2"
+  }
+}

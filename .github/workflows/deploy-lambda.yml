@@ -1,0 +1,58 @@
+name: Deploy Specific Lambda to AWS
+
+on:
+  workflow_dispatch:
+    inputs:
+      lambda:
+        description: "Lambda directory to deploy (e.g. contact-form)"
+        required: true
+      lambda_name:
+        description: "AWS Lambda function name"
+        required: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: ⬇️ Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🟢 Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: 🔄 Change to Lambda folder
+        working-directory: ${{ github.event.inputs.lambda }}
+        run: echo "Changed to $PWD"
+
+      - name: 📦 Install dependencies
+        working-directory: ${{ github.event.inputs.lambda }}
+        run: npm ci
+
+      - name: 🛠 Build TypeScript
+        working-directory: ${{ github.event.inputs.lambda }}
+        run: npm run build
+
+      - name: 🚫 Prune devDependencies
+        working-directory: ${{ github.event.inputs.lambda }}
+        run: npm prune --production
+
+      - name: 📦 Zip Lambda files
+        working-directory: ${{ github.event.inputs.lambda }}
+        run: |
+          zip -r ../../lambda.zip dist handler.js node_modules package.json
+
+      - name: 🔐 Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v3
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: 🚀 Deploy to AWS Lambda
+        run: |
+          aws lambda update-function-code \
+            --function-name ${{ github.event.inputs.lambda_name }} \
+            --zip-file fileb://lambda.zip
