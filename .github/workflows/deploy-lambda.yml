@@ -23,9 +23,6 @@ jobs:
         with:
           node-version: 22
 
-      - name: 🗂️ Debug workspace contents
-        run: ls -R
-
       - name: 🔄 Change to Lambda folder
         working-directory: ${{ github.event.inputs.lambda }}
         run: echo "Changed to $PWD"
@@ -45,7 +42,7 @@ jobs:
       - name: 📦 Zip Lambda files
         working-directory: ${{ github.event.inputs.lambda }}
         run: |
-          zip -r ../../lambda.zip dist handler.js node_modules package.json
+          zip -r ../../lambda.zip dist/handler.js node_modules package.json
 
       - name: 🔐 Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v3
