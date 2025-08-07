@@ -1,7 +1,7 @@
 {
   "name": "email-dispacher",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "main.js",
   "scripts": {
     "build": "tsc",
     "dev": "ts-node src/main.ts",

@@ -1,20 +1,34 @@
-import * as dotenv from 'dotenv';
+import * as dotenv from "dotenv";
 dotenv.config();
 
-import { handler } from './handler';
+import { handler } from "./handler";
 
-const event = {
-  body: JSON.stringify({
-    name: 'Pippo',
-    surname: 'Pluto',
-    email: 'pippo@pluto.com',
-    message: 'Happy wedding! I wish you the best!',
-  }),
-} as any;
+(async () => {
+  const testPayload = {
+    to: ["simone.decristofaro@movesion.com"],
+    subject: "📨 Test Email from Wedding Site",
+    text: "This is the plain text version of your test email.",
+    html: `
+      <div style="font-family: sans-serif; line-height: 1.5">
+        <h2>🎉 New Wedding Message</h2>
+        <p><strong>Happy wedding!</strong> I wish you the very best!</p>
+        <p>— Sent via <em>email-dispatcher Lambda</em></p>
+      </div>
+    `,
+  };
 
-console.log(event);
+  const event = {
+    body: JSON.stringify(testPayload),
+  } as any;
 
-handler(event, {} as any, (err, result) => {
-  if (err) console.error(err);
-  else console.log(result);
-});
+  const context = {} as any;
+
+  try {
+    console.log("🚀 Invoking Lambda...");
+    const result = await handler(event, context, () => {});
+    console.log("✅ Handler result:", result);
+  } catch (err) {
+    console.error("❌ Error in handler:", err);
+    process.exit(1);
+  }
+})();
