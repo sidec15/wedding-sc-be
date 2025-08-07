@@ -23,6 +23,9 @@ jobs:
         with:
           node-version: 22
 
+      - name: 🗂️ Debug workspace contents
+        run: ls -R
+
       - name: 🔄 Change to Lambda folder
         working-directory: ${{ github.event.inputs.lambda }}
         run: echo "Changed to $PWD"
