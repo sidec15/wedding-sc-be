@@ -2,33 +2,48 @@ import * as dotenv from "dotenv";
 dotenv.config();
 
 import { handler } from "./handler";
+import { SNSEvent } from "aws-lambda";
+
+const event: SNSEvent = {
+  Records: [
+    {
+      EventSource: "aws:sns",
+      EventVersion: "1.0",
+      EventSubscriptionArn: "arn:aws:sns:example", // dummy
+      Sns: {
+        Type: "Notification",
+        MessageId: "test-id",
+        TopicArn: "arn:aws:sns:example",
+        Subject: undefined,
+        Message: JSON.stringify({
+          type: "contact-us",
+          to: ["simone.decristofaro@movesion.com"],
+          subject: "📨 Test Email via SNS",
+          text: "This is the text fallback.",
+          html: `
+            <div style="font-family: sans-serif">
+              <h2>🎉 Test from SNS</h2>
+              <p>Happy wedding, again!</p>
+            </div>
+          `,
+        }),
+        Timestamp: new Date().toISOString(),
+        SignatureVersion: "1",
+        Signature: "fake",
+        SigningCertUrl: "https://example.com",
+        UnsubscribeUrl: "https://example.com",
+        MessageAttributes: {},
+      },
+    },
+  ],
+};
 
 (async () => {
-  const testPayload = {
-    to: ["simone.decristofaro@movesion.com"],
-    subject: "📨 Test Email from Wedding Site",
-    text: "This is the plain text version of your test email.",
-    html: `
-      <div style="font-family: sans-serif; line-height: 1.5">
-        <h2>🎉 New Wedding Message</h2>
-        <p><strong>Happy wedding!</strong> I wish you the very best!</p>
-        <p>— Sent via <em>email-dispatcher Lambda</em></p>
-      </div>
-    `,
-  };
-
-  const event = {
-    body: JSON.stringify(testPayload),
-  } as any;
-
-  const context = {} as any;
-
   try {
-    console.log("🚀 Invoking Lambda...");
-    const result = await handler(event, context, () => {});
-    console.log("✅ Handler result:", result);
+    await handler(event, {} as any);
+    console.log("🏁 Done.");
   } catch (err) {
-    console.error("❌ Error in handler:", err);
+    console.error("❌ Error running handler:", err);
     process.exit(1);
   }
 })();
