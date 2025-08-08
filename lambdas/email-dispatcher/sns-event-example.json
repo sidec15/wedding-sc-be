@@ -1,0 +1,7 @@
+{
+  "type": "contact-us",
+  "to": ["simone.decristofaro85@gmail.com", "chiara.mcf86@gmail.com"],
+  "subject": "📨 Test Email via SNS",
+  "text": "This is the plain text fallback.",
+  "html": "<h2>🎉 Test from SNS</h2><p>Happy wedding!</p>"
+}

@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       lambda:
-        description: "Lambda directory to deploy (e.g. contact-form)"
+        description: "Lambda directory to deploy (e.g. email-dispatcher)"
         required: true
       lambda_name:
         description: "AWS Lambda function name"
@@ -24,27 +24,29 @@ jobs:
           node-version: 22
 
       - name: 🔄 Change to Lambda folder
-        working-directory: ${{ github.event.inputs.lambda }}
+        working-directory: lambdas/${{ github.event.inputs.lambda }}
         run: echo "Changed to $PWD"
 
       - name: 📦 Install dependencies
-        working-directory: ${{ github.event.inputs.lambda }}
+        working-directory: lambdas/${{ github.event.inputs.lambda }}
         run: npm ci
 
       - name: 🛠 Build TypeScript
-        working-directory: ${{ github.event.inputs.lambda }}
+        working-directory: lambdas/${{ github.event.inputs.lambda }}
         run: npm run build
 
       - name: 🚫 Prune devDependencies
-        working-directory: ${{ github.event.inputs.lambda }}
+        working-directory: lambdas/${{ github.event.inputs.lambda }}
         run: npm prune --production
 
       - name: 📦 Zip Lambda files
-        working-directory: ${{ github.event.inputs.lambda }}
+        working-directory: lambdas/${{ github.event.inputs.lambda }}
         run: |
           zip -r lambda.zip dist/handler.js node_modules package.json
-          mv lambda.zip ../lambda.zip
+          mv lambda.zip ../../lambda.zip
       
+      - name: 🧪 Show current files
+        run: ls -la
 
       - name: 🔐 Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v3
@@ -52,9 +54,6 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
-
-      - name: 🧪 Show current files
-        run: ls -la        
 
       - name: 🚀 Deploy to AWS Lambda
         run: |
