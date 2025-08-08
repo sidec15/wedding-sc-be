@@ -1,0 +1,28 @@
+{
+  "name": "@wedding/common",
+  "version": "1.0.0",
+  "description": "Common library",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sidec15/wedding-sc-be.git"
+  },
+  "author": "sidec15",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/sidec15/wedding-sc-be/issues"
+  },
+  "homepage": "https://github.com/sidec15/wedding-sc-be#readme",
+  "dependencies": {
+    "os": "^0.1.2",
+    "winston": "^3.14.2"
+  },
+  "devDependencies": {
+    "@types/node": "^24.2.1",
+    "typescript": "^5.9.2"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "name": "wedding-be",
+  "private": true,
+  "workspaces": [
+    "common",
+    "lambdas/*"
+  ],
+  "scripts": {
+    "build": "npm run build -w common && npm run build -ws",
+    "deploy": "cd infrastructure && cdk deploy"
+  }
+}

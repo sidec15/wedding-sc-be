@@ -8,8 +8,20 @@
     "strict": true,
     "esModuleInterop": true,
     "moduleResolution": "node",
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "baseUrl": ".",
+    "paths": {
+      "@wedding/common": ["../../common/dist"],
+      "@wedding/common/*": ["../../common/dist/*"]
+    }
   },
-  "include": ["src"],
-  "exclude": ["node_modules", "src/main.ts"]
+  "references": [
+    { "path": "../../common" }
+  ],
+  "include": ["src/**/*.ts"],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "**/*.spec.ts"
+  ]
 }
