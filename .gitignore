@@ -2,3 +2,4 @@ node_modules/
 dist/
 .env
 lambda.zip
+email-dispatcher/sns-event-example.json

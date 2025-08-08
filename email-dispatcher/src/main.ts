@@ -17,7 +17,7 @@ const event: SNSEvent = {
         Subject: undefined,
         Message: JSON.stringify({
           type: "contact-us",
-          to: ["simone.decristofaro@movesion.com"],
+          to: ["simone.decristofaro85@gmail.com","chiara.mcf86@gmail.com"],
           subject: "📨 Test Email via SNS",
           text: "This is the text fallback.",
           html: `
@@ -38,12 +38,15 @@ const event: SNSEvent = {
   ],
 };
 
-(async () => {
-  try {
-    await handler(event, {} as any);
-    console.log("🏁 Done.");
-  } catch (err) {
-    console.error("❌ Error running handler:", err);
-    process.exit(1);
-  }
-})();
+console.log(JSON.stringify(event, null, 2));
+
+
+// (async () => {
+//   try {
+//     await handler(event, {} as any);
+//     console.log("🏁 Done.");
+//   } catch (err) {
+//     console.error("❌ Error running handler:", err);
+//     process.exit(1);
+//   }
+// })();
