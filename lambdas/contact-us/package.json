@@ -1,6 +1,7 @@
 {
-  "name": "email-dispacher",
+  "name": "contact-us",
   "version": "1.0.0",
+  "description": "Lambda function to check and publish contact message",
   "main": "main.js",
   "scripts": {
     "build": "tsc",
@@ -8,7 +9,6 @@
     "start": "node dist/main.js",
     "package": "npm run build && npm prune --production && zip -r lambda.zip dist/handler.js node_modules package.json"
   },
-  "keywords": [],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/sidec15/wedding-sc-be.git"
@@ -18,16 +18,14 @@
   "bugs": {
     "url": "https://github.com/sidec15/wedding-sc-be/issues"
   },
-  "homepage": "https://github.com/sidec15/wedding-sc-be#readme",  
-  "dependencies": {
-    "nodemailer": "^7.0.5"
-  },
+  "homepage": "https://github.com/sidec15/wedding-sc-be#readme",
   "devDependencies": {
     "@types/aws-lambda": "^8.10.152",
     "@types/node": "^24.2.0",
-    "@types/nodemailer": "^6.4.17",
-    "dotenv": "^17.2.1",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.2"
+  },
+  "dependencies": {
+    "axios": "^1.11.0"
   }
 }
