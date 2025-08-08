@@ -43,7 +43,7 @@ jobs:
         working-directory: ${{ github.event.inputs.lambda }}
         run: |
           zip -r lambda.zip dist/handler.js node_modules package.json
-          mv lambda.zip ../../lambda.zip
+          mv lambda.zip ../lambda.zip
       
 
       - name: 🔐 Configure AWS credentials
@@ -52,6 +52,9 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: 🧪 Show current files
+        run: ls -la        
 
       - name: 🚀 Deploy to AWS Lambda
         run: |
