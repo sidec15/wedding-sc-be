@@ -30,19 +30,19 @@ jobs:
         working-directory: common
         run: npm run build
 
-      - name: 🔄 Change to Lambda folder
+      - name: 📦 Add common in lambda
         working-directory: lambdas/${{ github.event.inputs.lambda }}
-        run: echo "Changed to $PWD"        
+        run: |
+          mkdir -p node_modules/@wedding
+          cp -r ../../common/dist node_modules/@wedding/common      
 
       - name: 🛠 Build Lambda
         working-directory: lambdas/${{ github.event.inputs.lambda }}
         run: npm run build:prod
 
-      - name: 📦 Package Lambda with common
+      - name: 📦 Package Lambda
         working-directory: lambdas/${{ github.event.inputs.lambda }}
         run: |
-          mkdir -p node_modules/@wedding
-          cp -r ../../common/dist node_modules/@wedding/common
           npm run zip
           mv lambda.zip ../../lambda.zip
 
