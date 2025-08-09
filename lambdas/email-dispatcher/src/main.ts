@@ -3,6 +3,7 @@ dotenv.config();
 
 import { handler } from "./handler";
 import { SNSEvent } from "aws-lambda";
+import { ILogger, Logger } from "@wedding/common";
 
 const event: SNSEvent = {
   Records: [
@@ -17,7 +18,7 @@ const event: SNSEvent = {
         Subject: undefined,
         Message: JSON.stringify({
           type: "contact-us",
-          to: ["simone.decristofaro85@gmail.com","chiara.mcf86@gmail.com"],
+          to: ["simone.decristofaro85@gmail.com"],
           subject: "📨 Test Email via SNS",
           text: "This is the text fallback.",
           html: `
@@ -38,15 +39,15 @@ const event: SNSEvent = {
   ],
 };
 
-console.log(JSON.stringify(event, null, 2));
+const logger: ILogger = new Logger();
 
-
-// (async () => {
-//   try {
-//     await handler(event, {} as any);
-//     console.log("🏁 Done.");
-//   } catch (err) {
-//     console.error("❌ Error running handler:", err);
-//     process.exit(1);
-//   }
-// })();
+(async () => {
+  try {
+    logger.debug(`Sending email test with: ${JSON.stringify(event)}`);
+    await handler(event, {} as any);
+    logger.info("🏁 Done.");
+  } catch (err) {
+    logger.error("❌ Error running handler:", err);
+    process.exit(1);
+  }
+})();

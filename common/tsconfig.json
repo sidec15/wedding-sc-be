@@ -9,10 +9,20 @@
     "esModuleInterop": true,
     "moduleResolution": "node",
     "resolveJsonModule": true,
-    "declaration": true,          // Crucial for type exports
-    "composite": true,            // Required for project references
-    "sourceMap": true             // Helpful for debugging
+    "declaration": true,
+    "composite": true,
+    "sourceMap": true,
+    "declarationMap": true,      // Add this for better debugging
+    "baseUrl": ".",              // Required for path resolution
+    "paths": {                   // Add if you have internal aliases
+      "@wedding/common/*": ["./src/*"]
+    }
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist"]
+  "exclude": [
+    "node_modules",
+    "dist",
+    "**/*.test.ts"              // Exclude test files if present
+  ],
+  "references": []              // Add if this references other packages
 }

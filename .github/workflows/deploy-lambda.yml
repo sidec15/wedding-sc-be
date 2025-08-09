@@ -23,30 +23,28 @@ jobs:
         with:
           node-version: 22
 
-      - name: 🔄 Change to Lambda folder
-        working-directory: lambdas/${{ github.event.inputs.lambda }}
-        run: echo "Changed to $PWD"
-
-      - name: 📦 Install dependencies
-        working-directory: lambdas/${{ github.event.inputs.lambda }}
+      - name: 📦 Install root dependencies
         run: npm ci
 
-      - name: 🛠 Build TypeScript
-        working-directory: lambdas/${{ github.event.inputs.lambda }}
+      - name: 🛠 Build common package
+        working-directory: common
         run: npm run build
 
-      - name: 🚫 Prune devDependencies
+      - name: 🔄 Change to Lambda folder
         working-directory: lambdas/${{ github.event.inputs.lambda }}
-        run: npm prune --production
+        run: echo "Changed to $PWD"        
 
-      - name: 📦 Zip Lambda files
+      - name: 🛠 Build Lambda
+        working-directory: lambdas/${{ github.event.inputs.lambda }}
+        run: npm run build:prod
+
+      - name: 📦 Package Lambda with common
         working-directory: lambdas/${{ github.event.inputs.lambda }}
         run: |
-          zip -r lambda.zip dist/handler.js node_modules package.json
+          mkdir -p node_modules/@wedding
+          cp -r ../../common/dist node_modules/@wedding/common
+          npm run zip
           mv lambda.zip ../../lambda.zip
-      
-      - name: 🧪 Show current files
-        run: ls -la
 
       - name: 🔐 Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v3

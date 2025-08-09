@@ -1,5 +1,6 @@
 import { SNSEvent, Context } from "aws-lambda";
 import nodemailer from "nodemailer";
+import { ILogger, Logger } from "@wedding/common";
 
 interface EmailNotificationMessage {
   type: "contact-us" | "comment-notification";
@@ -9,10 +10,17 @@ interface EmailNotificationMessage {
   html?: string;
 }
 
-export const handler = async (event: SNSEvent, context: Context): Promise<void> => {
+const logger: ILogger = new Logger();
+
+export const handler = async (
+  event: SNSEvent,
+  context: Context
+): Promise<void> => {
   for (const record of event.Records) {
     try {
-      const payload = JSON.parse(record.Sns.Message) as EmailNotificationMessage;
+      const payload = JSON.parse(
+        record.Sns.Message
+      ) as EmailNotificationMessage;
 
       const transporter = nodemailer.createTransport({
         host: process.env.SMTP_HOST,
@@ -24,7 +32,7 @@ export const handler = async (event: SNSEvent, context: Context): Promise<void> 
         },
       });
 
-      console.log(`📧 Sending email to: ${payload.to.join(", ")}`);
+      logger.info(`📧 Sending email to: ${payload.to.join(", ")}`);
       await transporter.sendMail({
         from: `"Wedding Site" <${process.env.SMTP_USER}>`,
         to: payload.to,
@@ -33,9 +41,9 @@ export const handler = async (event: SNSEvent, context: Context): Promise<void> 
         html: payload.html,
       });
 
-      console.log("✅ Email sent successfully");
+      logger.info("✅ Email sent successfully");
     } catch (error) {
-      console.error("❌ Failed to send email:", error);
+      logger.error("❌ Failed to send email:", error);
     }
   }
 };

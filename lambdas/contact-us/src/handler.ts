@@ -1,6 +1,7 @@
 import { APIGatewayProxyHandler } from "aws-lambda";
 import { SNSClient, PublishCommand } from "@aws-sdk/client-sns";
 import axios from "axios";
+import { dateTimeUtils, ILogger, Logger } from "@wedding/common";
 
 interface ContactFormData {
   name: string;
@@ -13,8 +14,13 @@ interface ContactFormData {
 
 const snsClient = new SNSClient({ region: process.env.AWS_REGION });
 
+const logger: ILogger = new Logger();
+
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
+    if (logger.isDebugEnabled()) {
+      logger.debug(`Raw event arrived: ${JSON.stringify(event)}`);
+    }
     const parsed = JSON.parse(event.body || "{}");
 
     const result = validateBody(parsed);
@@ -23,6 +29,9 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     const body = parsed as unknown as ContactFormData;
+    if (logger.isDebugEnabled()) {
+      logger.debug(`Parsed body: ${JSON.stringify(body)}`);
+    }
 
     const useRecaptcha = process.env.USE_RECAPTCHA === "true";
 
@@ -37,15 +46,22 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       }
     }
 
+    const topicArn = process.env.EMAIL_SNS_TOPIC_ARN;
+    if (!topicArn) {
+      throw new Error(
+        `Required environment variable EMAIL_SNS_TOPIC_ARN not set`
+      );
+    }
+
     // Publish to SNS topic
     const publishCommand = new PublishCommand({
-      TopicArn: process.env.EMAIL_SNS_TOPIC_ARN!,
+      TopicArn: topicArn,
       Message: JSON.stringify({
         type: "contact-us",
-        to: process.env.TO_EMAIL?.split(",").map(e => e.trim()) || [],
+        to: process.env.TO_EMAIL?.split(",").map((e) => e.trim()) || [],
         subject: `Wedding Contact Form - New message from ${body.name}`,
         text: createTextMessage(body),
-        html: createHtmlMessage(body)
+        html: createHtmlMessage(body),
       }),
       MessageAttributes: {
         source: {
@@ -54,12 +70,21 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         },
       },
     });
+    if (logger.isDebugEnabled()) {
+      logger.debug(
+        `Publishing SNS event with command: ${JSON.stringify(publishCommand)}`
+      );
+    }
 
     await snsClient.send(publishCommand);
 
+    logger.info(
+      `Correctly published event on topic: ${process.env.EMAIL_SNS_TOPIC_ARN}`
+    );
+
     return createResponse(200, { message: "Message sent successfully!" });
   } catch (error) {
-    console.error("SNS publish error:", error);
+    logger.error("SNS publish error:", error);
     return createResponse(500, { error: "Failed to send message" });
   }
 };
@@ -162,14 +187,9 @@ const createHtmlMessage = (body: ContactFormData) => {
       
       <p style="text-align: center; margin-top: 25px; color: #999; font-size: 13px;">
         Questo messaggio è stato inviato dal modulo di contatto del vostro sito matrimonio.<br>
-        Data: ${new Date().toLocaleString("it-IT")}
+        Data: ${dateTimeUtils.formatItalianDateTime()}
       </p>
       
-      <div style="text-align: center; margin-top: 20px;">
-        <span style="display: inline-block; padding: 5px 15px; background-color: #f8e5ea; color: #d67a8a; border-radius: 15px; font-size: 12px;">
-          Con amore, ${body.name} ❤️
-        </span>
-      </div>
     </div>
   </div>
   `;
