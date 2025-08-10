@@ -1,0 +1,149 @@
+Analize deeply the following.
+
+This is my package root and tsconfig root
+
+{
+  "name": "wedding-be",
+  "private": true,
+  "workspaces": [
+    "common",
+    "lambdas/*"
+  ],
+  "scripts": {
+    "bootstrap": "npm install --workspaces",
+    "build": "tsc -b tsconfig.build.json",
+    "rebuild": "npm run clean && tsc -b tsconfig.build.json",
+    "build:common": "tsc -b common",
+    "build:lambda:email-dispatcher": "tsc -b lambdas/email-dispatcher",
+    "build:lambda:contact-us": "tsc -b lambdas/contact-us",
+    "clean": "npx rimraf --glob common/dist 'lambdas/*/dist'",
+    "clean:modules": "npx rimraf --glob node_modules common/node_modules 'lambdas/*/node_modules'",
+    "clean:additional": "npx rimraf wedding-common-1.0.0.tgz && npx rimraf --glob common/tsconfig.tsbuildinfo 'lambdas/*/tsconfig.tsbuildinfo'",
+    "clean:all": "npm run clean && npm run clean:modules && npm run clean:additional",
+    "sync:common:version": "node scripts/sync-common-version.js",
+    "common:bump:patch": "npm version -w common patch --no-git-tag-version && npm run sync:common:version && npm install",
+    "common:bump:minor": "npm version -w common minor --no-git-tag-version && npm run sync:common:version && npm install",
+    "common:bump:major": "npm version -w common major --no-git-tag-version && npm run sync:common:version && npm install"
+  },
+  "dependencies": {
+    "bootstrap": "^5.3.7"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.2"
+  }
+}
+
+
+{
+  "files": [],
+  "references": [
+    { "path": "./common" },
+    { "path": "./lambdas/email-dispatcher" },
+    { "path": "./lambdas/contact-us" }
+  ]
+}
+
+then common package and tsconfig
+{
+  "name": "@wedding/common",
+  "version": "1.0.0",
+  "description": "Common library",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist/**/*"
+  ],
+  "scripts": {
+    "build": "tsc -b"
+  },
+  "dependencies": {
+    "luxon": "^3.7.1",
+    "winston": "^3.14.2"
+  },
+  "devDependencies": {
+    "@types/luxon": "^3.7.1",
+    "@types/node": "^24.2.1",
+    "typescript": "^5.9.2"
+  }
+}
+
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "CommonJS",
+    "lib": ["ES2020"],
+    "outDir": "dist",
+    "rootDir": "src",
+    "strict": true,
+    "esModuleInterop": true,
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "skipLibCheck": true,
+    "composite": true
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["dist", "node_modules", "**/*.test.ts"]
+}
+
+
+and one lambda package and tsconfig
+{
+  "name": "email-dispatcher",
+  "version": "1.0.0",
+  "main": "main.js",
+  "scripts": {
+    "build": "tsc",
+    "build:prod": "npm run build && npm prune --production",
+    "zip": "zip -r lambda.zip dist/handler.js node_modules package.json",
+    "dev": "ts-node src/main.ts",
+    "start": "node dist/main.js",
+    "package": "npm run build && npm prune --production && zip -r lambda.zip dist/handler.js node_modules package.json"
+  },
+  "keywords": [],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sidec15/wedding-sc-be.git"
+  },
+  "author": "sidec15",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/sidec15/wedding-sc-be/issues"
+  },
+  "homepage": "https://github.com/sidec15/wedding-sc-be#readme",
+  "dependencies": {
+    "@wedding/common": "file:../../wedding-common-1.0.0.tgz",
+    "nodemailer": "^7.0.5"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.152",
+    "@types/node": "^24.2.0",
+    "@types/nodemailer": "^6.4.17",
+    "dotenv": "^17.2.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.2"
+  }
+}
+
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "CommonJS",
+    "lib": ["ES2020"],
+    "outDir": "dist",
+    "rootDir": "src",
+    "strict": true,
+    "esModuleInterop": true,
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "composite": true
+  },
+  "references": [
+    { "path": "../../common" }
+  ],
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules", "dist", "**/*.spec.ts"]
+}
