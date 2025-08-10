@@ -33,7 +33,7 @@ jobs:
       - name: 📦 Add common in lambda
         working-directory: lambdas/${{ github.event.inputs.lambda }}
         run: |
-          mkdir -p node_modules/@wedding
+          mkdir -p node_modules/@wedding/common
           cp -r ../../common/dist/* node_modules/@wedding/common/  
 
       - name: 🛠 Build Lambda
