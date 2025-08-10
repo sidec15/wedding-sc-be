@@ -28,7 +28,7 @@
     "typescript": "^5.9.2"
   },
   "dependencies": {
-    "@wedding/common": "*",
+    "@wedding/common": "workspace:*",
     "@aws-sdk/client-sns": "^3.863.0",
     "axios": "^1.11.0"
   }

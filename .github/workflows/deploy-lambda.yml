@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       lambda:
-        description: "Lambda directory to deploy (e.g. email-dispatcher)"
+        description: "Lambda workspace folder under lambdas/ (e.g. email-dispatcher)"
         required: true
       lambda_name:
         description: "AWS Lambda function name"
@@ -23,31 +23,32 @@ jobs:
         with:
           node-version: 22
 
-      - name: 📦 Install root dependencies
-        run: npm ci
-
-      - name: 🛠 Build common package
-        working-directory: common
+      # Install only the needed workspaces; avoid symlinks so node_modules can be zipped for Lambda.
+      - name: 📦 Install workspaces (no symlinks)
         run: |
-          npm run build
-          ls -la dist
+          npm ci --include-workspace-root=false \
+            --workspace common \
+            --workspace lambdas/${{ github.event.inputs.lambda }} \
+            --install-links=false
 
-      - name: 📦 Link common to Lambda
-        working-directory: lambdas/${{ github.event.inputs.lambda }}
-        run: |
-          mkdir -p node_modules/@wedding
-          cp -r ../../common/dist node_modules/@wedding/common
-          echo "Copied files:"
-          ls -la node_modules/@wedding/common/
+      - name: 🛠 Build common
+        run: npm run -w common build
 
       - name: 🛠 Build Lambda
-        working-directory: lambdas/${{ github.event.inputs.lambda }}
-        run: npm run build
+        run: npm run -w lambdas/${{ github.event.inputs.lambda }} build
+
+      # Optional: ensure at least one .d.ts was emitted from common (helps catch TS config issues)
+      - name: 🔎 Verify common types emitted
+        run: |
+          test -n "$(find common/dist -name '*.d.ts' -print -quit)" || (echo "❌ No type declarations emitted by @wedding/common" && exit 1)
+
+      - name: 🧹 Prune dev deps in Lambda
+        run: npm prune -w lambdas/${{ github.event.inputs.lambda }} --omit=dev
 
       - name: 📦 Package Lambda
         working-directory: lambdas/${{ github.event.inputs.lambda }}
         run: |
-          npm run zip
+          zip -r lambda.zip dist/handler.js node_modules package.json
           mv lambda.zip ../../lambda.zip
 
       - name: 🔐 Configure AWS credentials
@@ -60,5 +61,5 @@ jobs:
       - name: 🚀 Deploy to AWS Lambda
         run: |
           aws lambda update-function-code \
-            --function-name ${{ github.event.inputs.lambda_name }} \
+            --function-name "${{ github.event.inputs.lambda_name }}" \
             --zip-file fileb://lambda.zip
