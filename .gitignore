@@ -1,5 +1,6 @@
 node_modules/
 dist/
+tsconfig.tsbuildinfo
 .env
 lambda.zip
 email-dispatcher/sns-event-example.json
