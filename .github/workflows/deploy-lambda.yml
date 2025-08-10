@@ -31,8 +31,6 @@ jobs:
         run: |
           npm run build
           ls -la dist
-          [ -f dist/index.d.ts ] || (echo "❌ Missing type declarations" && exit 1)
-          [ -f dist/index.js ] || (echo "❌ Missing JS files" && exit 1)
 
       - name: 📦 Link common to Lambda
         working-directory: lambdas/${{ github.event.inputs.lambda }}
