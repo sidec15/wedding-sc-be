@@ -22,7 +22,7 @@
   },
   "homepage": "https://github.com/sidec15/wedding-sc-be#readme",
   "dependencies": {
-    "@wedding/common": "file:../../wedding-common-1.0.0.tgz",
+    "@wedding/common": "workspace:*",
     "nodemailer": "^7.0.5"
   },
   "devDependencies": {

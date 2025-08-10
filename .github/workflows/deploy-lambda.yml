@@ -24,7 +24,7 @@ on:
         description: "AWS region"
         type: string
         required: false
-        default: eu-central-1
+        default: eu-west-1
 
 env:
   NODE_VERSION: "22"
