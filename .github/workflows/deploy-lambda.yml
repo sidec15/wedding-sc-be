@@ -23,33 +23,46 @@ jobs:
         with:
           node-version: 22
 
-      # Install only the two workspaces we need; avoid symlinks so node_modules can be zipped for Lambda.
-      - name: 📦 Install common + target lambda (no symlinks)
+      # Build common so dist/ exists and "files": ["dist"] is respected in the tarball
+      - name: 📦 Install and build common
         run: |
-          npm ci --include-workspace-root=false \
-            --workspace common \
-            --workspace lambdas/${{ github.event.inputs.lambda }} \
-            --install-links=false
+          npm ci --include-workspace-root=false --workspace common
+          npm run -w common build
+          ls -la common/dist
 
-      # Build common first (emits dist/ via tsc -b)
-      - name: 🛠 Build common
-        run: npm run -w common build
+      # Create a packable tarball of common (contains only files listed in "files")
+      - name: 🧶 Pack common
+        run: |
+          cd common
+          npm pack --silent
+          ls -la
+        shell: bash
 
-      # Build the selected lambda (tsc in that workspace)
+      # Install lambda deps and the packed common tarball into the lambda workspace
+      - name: 📦 Install lambda deps + common tarball
+        run: |
+          # Find the generated tarball name (e.g. wedding-common-1.0.0.tgz)
+          TARBALL=$(ls common/*.tgz)
+          echo "Tarball: $TARBALL"
+          npm ci --include-workspace-root=false --workspace lambdas/${{ github.event.inputs.lambda }}
+          npm i --no-save -w lambdas/${{ github.event.inputs.lambda }} "$TARBALL"
+
+      # Build lambda (now @wedding/common is a real dependency in its node_modules)
       - name: 🛠 Build Lambda
         run: npm run -w lambdas/${{ github.event.inputs.lambda }} build
 
-      # Sanity checks (optional but helpful)
+      # Sanity checks
       - name: ✅ Verify artifacts
         run: |
-          test -n "$(find common/dist -name '*.d.ts' -print -quit)" || (echo "❌ No type declarations emitted by @wedding/common" && exit 1)
-          test -f "lambdas/${{ github.event.inputs.lambda }}/dist/handler.js" || (echo "❌ dist/handler.js missing" && exit 1)
+          test -f "lambdas/${{ github.event.inputs.lambda }}/node_modules/@wedding/common/package.json" || (echo "❌ @wedding/common not installed in lambda" && exit 1)
+          test -f "lambdas/${{ github.event.inputs.lambda }}/node_modules/@wedding/common/dist/index.js" || (echo "❌ @wedding/common dist missing in lambda" && exit 1)
+          test -f "lambdas/${{ github.event.inputs.lambda }}/dist/handler.js" || (echo "❌ lambda dist/handler.js missing" && exit 1)
 
-      # Prune dev deps inside the lambda workspace so the zip is lean
+      # Prune dev deps inside the lambda to slim the zip
       - name: 🧹 Prune dev deps in Lambda
         run: npm prune -w lambdas/${{ github.event.inputs.lambda }} --omit=dev
 
-      # Use the lambda's own zip script and move the artifact to the repo root
+      # Package using the lambda's script (zips dist, node_modules, package.json)
       - name: 📦 Package Lambda
         run: |
           npm run -w lambdas/${{ github.event.inputs.lambda }} zip
