@@ -13,6 +13,7 @@
     "composite": true,
     "sourceMap": true,
     "declarationMap": true,      // Add this for better debugging
+    "emitDeclarationOnly": true,  // Add this line
     "baseUrl": ".",              // Required for path resolution
     "paths": {                   // Add if you have internal aliases
       "@wedding/common/*": ["./src/*"]
