@@ -26,11 +26,10 @@ jobs:
       - name: 📦 Install root dependencies
         run: npm ci
 
-      - name: 🛠 Build common package (with types)
+      - name: 🛠 Build common package
         working-directory: common
         run: |
-          npx tsc --emitDeclarationOnly
-          npx tsc --declaration false
+          npx tsc
           [ -f dist/index.d.ts ] || (echo "❌ Missing type declarations" && exit 1)
           [ -f dist/index.js ] || (echo "❌ Missing JS files" && exit 1)
 
