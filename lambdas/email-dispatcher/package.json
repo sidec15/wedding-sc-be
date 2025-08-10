@@ -5,6 +5,7 @@
   "scripts": {
     "build": "tsc",
     "build:prod": "npm run build && npm prune --production",
+    "zip": "zip -r lambda.zip dist/handler.js node_modules package.json",
     "dev": "ts-node src/main.ts",
     "start": "node dist/main.js",
     "package": "npm run build && npm prune --production && zip -r lambda.zip dist/handler.js node_modules package.json"
