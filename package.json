@@ -6,11 +6,24 @@
     "lambdas/*"
   ],
   "scripts": {
-    "build": "npm run build -w common && npm run build -ws",
-    "clean": "rimraf --glob dist common/dist \"lambdas/*/dist\"",
-    "clean:modules": "rimraf --glob node_modules common/node_modules \"lambdas/*/node_modules\"",
+    "bootstrap": "npm install --workspaces",
+    "build": "npm run build:common && npm run build:lambdas",
+    "build:common": "tsc -p common/tsconfig.json",
+    "build:lambdas": "npm run build:lambda:contact-us && npm run build:lambda:email-dispatcher",
+    "build:lambda:contact-us": "npm run -w lambdas/contact-us build",
+    "build:lambda:email-dispatcher": "npm run -w lambdas/email-dispatcher build",
+    "clean": "npx rimraf --glob dist common/dist \"lambdas/*/dist\"",
+    "clean:modules": "npx rimraf --glob node_modules common/node_modules \"lambdas/*/node_modules\"",
     "clean:all": "npm run clean && npm run clean:modules",
-    "deploy": "cd infrastructure && cdk deploy",
-    "update:common-version": "npm version patch -w common"
+    "sync:common:version": "node scripts/sync-common-version.js",
+    "common:bump:patch": "npm version -w common patch --no-git-tag-version && npm run sync:common:version && npm install",
+    "common:bump:minor": "npm version -w common minor --no-git-tag-version && npm run sync:common:version && npm install",
+    "common:bump:major": "npm version -w common major --no-git-tag-version && npm run sync:common:version && npm install"
+  },
+  "dependencies": {
+    "bootstrap": "^5.3.7"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.2"
   }
 }
