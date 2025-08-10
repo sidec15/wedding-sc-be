@@ -10,20 +10,14 @@
     "moduleResolution": "node",
     "resolveJsonModule": true,
     "declaration": true,
-    "composite": true,
+    "composite": true,          // Keep this for workspace references
     "sourceMap": true,
-    "declarationMap": true,      // Add this for better debugging
-    "emitDeclarationOnly": true,  // Add this line
-    "baseUrl": ".",              // Required for path resolution
-    "paths": {                   // Add if you have internal aliases
+    "declarationMap": true,
+    "baseUrl": ".",
+    "paths": {
       "@wedding/common/*": ["./src/*"]
     }
   },
   "include": ["src/**/*"],
-  "exclude": [
-    "node_modules",
-    "dist",
-    "**/*.test.ts"              // Exclude test files if present
-  ],
-  "references": []              // Add if this references other packages
+  "exclude": ["node_modules", "dist", "**/*.test.ts"]
 }
