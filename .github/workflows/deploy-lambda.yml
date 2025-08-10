@@ -48,7 +48,6 @@ jobs:
 
       - name: Resolve metadata (folder, function, region)
         id: meta
-        shell: bash
         run: |
           FOLDER_INPUT="${{ github.event.inputs.folder }}"
           NAME_INPUT="${{ github.event.inputs.function_name }}"
@@ -82,7 +81,6 @@ jobs:
 
       - name: Pack @wedding/common
         id: pack
-        shell: bash
         run: |
           TARBALL="$(npm pack --silent ./common | tail -n1 | tr -d '\r')"
           [[ -f "$TARBALL" ]] || { echo "Tarball not found"; exit 1; }
@@ -98,19 +96,18 @@ jobs:
             "${{ steps.pack.outputs.tarball_abs }}"
 
       - name: Sanity checks
-        shell: bash
         run: |
           test -f "lambdas/${{ steps.meta.outputs.lambda_folder }}/node_modules/@wedding/common/dist/index.js" || (echo "common dist missing" && exit 1)
           node -e "require('lambdas/${{ steps.meta.outputs.lambda_folder }}/node_modules/@wedding/common'); console.log('ok common')"
           node -e "require('lambdas/${{ steps.meta.outputs.lambda_folder }}/dist/handler.js'); console.log('ok handler')"
 
-          - name: "Create ZIP (flat root: dist/, node_modules/, package.json)"
-          run: |
-            rm -f "${{ steps.meta.outputs.zip_name }}"
-            pushd "lambdas/${{ steps.meta.outputs.lambda_folder }}" >/dev/null
-            zip -r "../../${{ steps.meta.outputs.zip_name }}" dist node_modules package.json -x "**/*.map"
-            popd >/dev/null
-            ls -lh "${{ steps.meta.outputs.zip_name }}"
+      - name: "Create ZIP (flat root: dist/, node_modules/, package.json)"
+        run: |
+          rm -f "${{ steps.meta.outputs.zip_name }}"
+          pushd "lambdas/${{ steps.meta.outputs.lambda_folder }}" >/dev/null
+          zip -r "../../${{ steps.meta.outputs.zip_name }}" dist node_modules package.json -x "**/*.map"
+          popd >/dev/null
+          ls -lh "${{ steps.meta.outputs.zip_name }}"
 
       - name: Deploy to AWS Lambda
         run: |
@@ -119,6 +116,9 @@ jobs:
             --zip-file "fileb://${{ steps.meta.outputs.zip_name }}" \
             --publish \
             --region "${{ steps.meta.outputs.region }}"
+
+      - name: Cleanup tarball
+        run: rm -f "${{ steps.pack.outputs.tarball_abs }}"
 
       - name: Upload ZIP artifact
         uses: actions/upload-artifact@v4
