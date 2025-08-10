@@ -26,21 +26,21 @@ jobs:
       - name: 📦 Install root dependencies
         run: npm ci
 
-      - name: 🛠 Build common package
-        working-directory: common
-        run: npm run build
-
-      - name: 🔍 Verify common build output
+      - name: 🛠 Build common package (with types)
         working-directory: common
         run: |
-          ls -la dist/
-          [ -f dist/index.d.ts ] || exit 1
+          npx tsc --emitDeclarationOnly
+          npx tsc --declaration false
+          [ -f dist/index.d.ts ] || (echo "❌ Missing type declarations" && exit 1)
+          [ -f dist/index.js ] || (echo "❌ Missing JS files" && exit 1)
 
-      - name: 📦 Add common in lambda
+      - name: 📦 Link common to Lambda
         working-directory: lambdas/${{ github.event.inputs.lambda }}
         run: |
-          mkdir -p node_modules/@wedding/common
-          cp -r ../../common/dist/* node_modules/@wedding/common/  
+          mkdir -p node_modules/@wedding
+          cp -r ../../common/dist node_modules/@wedding/common
+          echo "Copied files:"
+          ls -la node_modules/@wedding/common/
 
       - name: 🛠 Build Lambda
         working-directory: lambdas/${{ github.event.inputs.lambda }}
