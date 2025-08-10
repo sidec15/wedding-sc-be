@@ -46,10 +46,9 @@ jobs:
         run: npm prune -w lambdas/${{ github.event.inputs.lambda }} --omit=dev
 
       - name: 📦 Package Lambda
-        working-directory: lambdas/${{ github.event.inputs.lambda }}
         run: |
-          zip -r lambda.zip dist/handler.js node_modules package.json
-          mv lambda.zip ../../lambda.zip
+          npm run -w lambdas/${{ github.event.inputs.lambda }} zip
+          mv lambdas/${{ github.event.inputs.lambda }}/lambda.zip ./lambda.zip
 
       - name: 🔐 Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v3
