@@ -30,7 +30,7 @@ jobs:
         working-directory: common
         run: |
           npm run build
-          la -la dist
+          ls -la dist
           [ -f dist/index.d.ts ] || (echo "❌ Missing type declarations" && exit 1)
           [ -f dist/index.js ] || (echo "❌ Missing JS files" && exit 1)
 
