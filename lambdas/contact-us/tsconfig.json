@@ -9,19 +9,12 @@
     "esModuleInterop": true,
     "moduleResolution": "node",
     "resolveJsonModule": true,
-    "baseUrl": ".",
-    "paths": {
-      "@wedding/common": ["../../common/dist"],
-      "@wedding/common/*": ["../../common/dist/*"]
-    }
+    "skipLibCheck": true,
+    "composite": true
   },
   "references": [
     { "path": "../../common" }
   ],
   "include": ["src/**/*.ts"],
-  "exclude": [
-    "node_modules",
-    "dist",
-    "**/*.spec.ts"
-  ]
+  "exclude": ["node_modules", "dist", "**/*.spec.ts"]
 }
