@@ -4,10 +4,11 @@
   "description": "Common library",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "files": ["dist"],
+  "files": [
+    "dist/**/*"
+  ],
   "scripts": {
-    "build": "tsc -b",
-    "build:prod": "npm run build && npm prune --production"
+    "build": "tsc -b"
   },
   "dependencies": {
     "luxon": "^3.7.1",

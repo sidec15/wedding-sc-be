@@ -1,81 +1,77 @@
-name: Deploy Specific Lambda to AWS
+name: Deploy Lambda
 
 on:
   workflow_dispatch:
     inputs:
-      lambda:
-        description: "Lambda workspace folder under lambdas/ (e.g. email-dispatcher)"
+      lambda_folder:
+        description: "Folder under lambdas/ (e.g. email-dispatcher)"
         required: true
+        type: string
       lambda_name:
         description: "AWS Lambda function name"
         required: true
+        type: string
+      aws_region:
+        description: "AWS region"
+        default: "eu-central-1"
+        required: false
+        type: string
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
+    env:
+      AWS_REGION: ${{ github.event.inputs.aws_region }}
+      NODE_VERSION: 20.x
+
     steps:
-      - name: ⬇️ Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: 🟢 Set up Node.js
+      - name: Use Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
 
-      # 1) Install + build COMMON so its dist/ exists
-      - name: 📦 Install deps for common
-        run: npm ci --include-workspace-root=false --workspace common
+      - name: Install dependencies (root + workspaces)
+        run: npm ci
 
-      - name: 🛠 Build common (tsc -b or your script)
-        run: npm run -w common build
-
-      - name: ✅ Verify common build
+      - name: Build common and lambda
         run: |
-          test -f common/dist/index.js || (echo "❌ common dist missing" && exit 1)
-          test -f common/dist/index.d.ts || (echo "❌ common types missing" && exit 1)
+          npm run build:common
+          npx tsc -b lambdas/${{ inputs.lambda_folder }}
 
-      # 2) Install BOTH workspaces together, using real copies (no symlinks)
-      #    This creates node_modules/@wedding/common inside the lambda (but npm may not include dist/)
-      - name: 📦 Install common + target lambda (no symlinks)
+      - name: Pack common as tarball
+        id: pack_common
         run: |
-          npm ci --include-workspace-root=false \
-            --workspace common \
-            --workspace "lambdas/${{ github.event.inputs.lambda }}" \
-            --install-links=false
+          TARBALL=$(npm pack ./common)
+          echo "TARBALL=$TARBALL" >> $GITHUB_ENV
 
-      # 3) Ensure the lambda's installed @wedding/common has the built dist/ from the workspace
-      #    (Some npm workspace installs don't copy build artifacts; so we overlay them.)
-      - name: 📂 Overlay built dist into lambda's @wedding/common
+      - name: Install prod deps in lambda folder
+        working-directory: lambdas/${{ inputs.lambda_folder }}
         run: |
-          COMMON_PKG="lambdas/${{ github.event.inputs.lambda }}/node_modules/@wedding/common"
-          test -d "$COMMON_PKG" || (echo "❌ @wedding/common not installed in lambda" && exit 1)
-          mkdir -p "$COMMON_PKG/dist"
-          rsync -a common/dist/ "$COMMON_PKG/dist/"
+          rm -rf node_modules
+          npm ci --omit=dev
+          npm install --omit=dev ../../${TARBALL}
 
-      # 4) Build the lambda
-      - name: 🛠 Build Lambda
-        run: npm run -w "lambdas/${{ github.event.inputs.lambda }}" build
-
-      # 6) Prune dev deps inside the lambda to slim the zip
-      - name: 🧹 Prune dev deps in Lambda
-        run: npm prune -w "lambdas/${{ github.event.inputs.lambda }}" --omit=dev
-
-      # 7) Zip using the lambda's own script; move to repo root for upload
-      - name: 📦 Package Lambda
+      - name: Zip lambda
+        working-directory: lambdas/${{ inputs.lambda_folder }}
         run: |
-          npm run -w "lambdas/${{ github.event.inputs.lambda }}" zip
-          mv "lambdas/${{ github.event.inputs.lambda }}/lambda.zip" ./lambda.zip
+          zip -r function.zip dist node_modules package.json .env -x "**/*.map" || true
 
-      - name: 🔐 Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v3
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
+          aws-region: ${{ env.AWS_REGION }}
 
-      - name: 🚀 Deploy to AWS Lambda
+      - name: Deploy Lambda
+        working-directory: lambdas/${{ inputs.lambda_folder }}
         run: |
           aws lambda update-function-code \
-            --function-name "${{ github.event.inputs.lambda_name }}" \
-            --zip-file fileb://lambda.zip
+            --function-name "${{ inputs.lambda_name }}" \
+            --zip-file "fileb://function.zip" \
+            --publish

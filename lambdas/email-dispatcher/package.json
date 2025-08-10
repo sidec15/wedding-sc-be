@@ -20,9 +20,9 @@
   "bugs": {
     "url": "https://github.com/sidec15/wedding-sc-be/issues"
   },
-  "homepage": "https://github.com/sidec15/wedding-sc-be#readme",  
+  "homepage": "https://github.com/sidec15/wedding-sc-be#readme",
   "dependencies": {
-    "@wedding/common": "*",
+    "@wedding/common": "file:../../wedding-common-1.0.0.tgz",
     "nodemailer": "^7.0.5"
   },
   "devDependencies": {

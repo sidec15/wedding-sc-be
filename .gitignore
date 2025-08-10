@@ -3,4 +3,5 @@ dist/
 tsconfig.tsbuildinfo
 .env
 lambda.zip
+wedding-common-1.0.0.tgz
 email-dispatcher/sns-event-example.json
