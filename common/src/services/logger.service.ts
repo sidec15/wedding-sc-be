@@ -1,5 +1,8 @@
 import { EOL } from "os";
-import winston, { LogCallback } from "winston";
+import winston from "winston";
+
+export type LogCallback = (error?: Error | null, level?: string, message?: string, meta?: any) => void;
+
 const { combine, timestamp, errors } = winston.format;
 
 export type ILogMetadata = { [key: string]: any };
