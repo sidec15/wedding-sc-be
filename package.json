@@ -19,7 +19,11 @@
     "sync:common:version": "node scripts/sync-common-version.js",
     "common:bump:patch": "npm version -w common patch --no-git-tag-version && npm run sync:common:version && npm install",
     "common:bump:minor": "npm version -w common minor --no-git-tag-version && npm run sync:common:version && npm install",
-    "common:bump:major": "npm version -w common major --no-git-tag-version && npm run sync:common:version && npm install"
+    "common:bump:major": "npm version -w common major --no-git-tag-version && npm run sync:common:version && npm install",
+
+    "pack:common": "npm -w common run build && node -e \"const {execSync}=require('node:child_process'); const out=execSync('npm pack --json ./common',{stdio:['ignore','pipe','inherit']}).toString(); const f=JSON.parse(out)[0].filename; console.log(f);\"",
+
+    "package:email-dispatcher": "npm run build:lambda:email-dispatcher && bash scripts/package-email-dispatcher.sh"
   },
   "dependencies": {
     "bootstrap": "^5.3.7"
