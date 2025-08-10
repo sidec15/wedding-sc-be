@@ -7,6 +7,10 @@
   ],
   "scripts": {
     "build": "npm run build -w common && npm run build -ws",
-    "deploy": "cd infrastructure && cdk deploy"
+    "clean": "rimraf --glob dist common/dist \"lambdas/*/dist\"",
+    "clean:modules": "rimraf --glob node_modules common/node_modules \"lambdas/*/node_modules\"",
+    "clean:all": "npm run clean && npm run clean:modules",
+    "deploy": "cd infrastructure && cdk deploy",
+    "update:common-version": "npm version patch -w common"
   }
 }

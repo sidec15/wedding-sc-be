@@ -23,13 +23,10 @@ jobs:
         with:
           node-version: 22
 
-      # Install only the needed workspaces; avoid symlinks so node_modules can be zipped for Lambda.
+      # Install all workspaces with real copies (no symlinks)
       - name: 📦 Install workspaces (no symlinks)
         run: |
-          npm ci --include-workspace-root=false \
-            --workspace common \
-            --workspace lambdas/${{ github.event.inputs.lambda }} \
-            --install-links=false
+          npm ci --workspaces --include-workspace-root=false --install-links=false
 
       - name: 🛠 Build common
         run: npm run -w common build
@@ -37,7 +34,6 @@ jobs:
       - name: 🛠 Build Lambda
         run: npm run -w lambdas/${{ github.event.inputs.lambda }} build
 
-      # Optional: ensure at least one .d.ts was emitted from common (helps catch TS config issues)
       - name: 🔎 Verify common types emitted
         run: |
           test -n "$(find common/dist -name '*.d.ts' -print -quit)" || (echo "❌ No type declarations emitted by @wedding/common" && exit 1)
