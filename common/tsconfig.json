@@ -10,14 +10,22 @@
     "moduleResolution": "node",
     "resolveJsonModule": true,
     "declaration": true,
-    "composite": true,          // Keep this for workspace references
-    "sourceMap": true,
     "declarationMap": true,
+    "sourceMap": true,
+    "composite": false, // Disabled to prevent declaration conflicts
+    "isolatedModules": true,
+    "skipLibCheck": true,
     "baseUrl": ".",
     "paths": {
+      "@wedding/common": ["./src"],
       "@wedding/common/*": ["./src/*"]
     }
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "**/*.test.ts"]
+  "exclude": [
+    "node_modules",
+    "dist",
+    "**/*.spec.ts",
+    "**/__tests__"
+  ]
 }
