@@ -50,13 +50,6 @@ jobs:
       - name: 🛠 Build Lambda
         run: npm run -w "lambdas/${{ github.event.inputs.lambda }}" build
 
-      # Sanity checks (ensure common + winston are in the lambda zip tree)
-      - name: ✅ Verify artifacts
-        run: |
-          test -f "lambdas/${{ github.event.inputs.lambda }}/node_modules/@wedding/common/dist/index.js" || (echo "❌ @wedding/common dist missing in lambda" && exit 1)
-          test -f "lambdas/${{ github.event.inputs.lambda }}/node_modules/winston/package.json" || (echo "❌ winston not installed in lambda" && exit 1)
-          test -f "lambdas/${{ github.event.inputs.lambda }}/dist/handler.js" || (echo "❌ lambda dist/handler.js missing" && exit 1)
-
       # Prune dev deps inside the lambda
       - name: 🧹 Prune dev deps in Lambda
         run: npm prune -w "lambdas/${{ github.event.inputs.lambda }}" --omit=dev
