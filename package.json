@@ -14,7 +14,7 @@
     "build:lambda:contact-us": "tsc -b lambdas/contact-us",
     "clean": "npx rimraf --glob common/dist 'lambdas/*/dist'",
     "clean:modules": "npx rimraf --glob node_modules common/node_modules 'lambdas/*/node_modules'",
-    "clean:additional": "npx rimraf wedding-common-1.0.0.tgz && npx rimraf --glob common/tsconfig.tsbuildinfo 'lambdas/*/tsconfig.tsbuildinfo'",
+    "clean:additional": "npx rimraf wedding-common-1.0.0.tgz && npx rimraf --glob common/tsconfig.tsbuildinfo 'lambdas/*/tsconfig.tsbuildinfo' && npx rimraf --glob *.zip",
     "clean:all": "npm run clean && npm run clean:modules && npm run clean:additional",
     "sync:common:version": "node scripts/sync-common-version.js",
     "common:bump:patch": "npm version -w common patch --no-git-tag-version && npm run sync:common:version && npm install",
