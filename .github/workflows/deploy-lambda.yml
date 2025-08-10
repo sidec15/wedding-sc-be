@@ -23,24 +23,37 @@ jobs:
         with:
           node-version: 22
 
-      # Install all workspaces with real copies (no symlinks)
-      - name: 📦 Install workspaces (no symlinks)
+      # 1) Install only what's needed to build the common workspace (dev deps included)
+      - name: 📦 Install deps for common (to build dist)
         run: |
-          npm ci --workspaces --include-workspace-root=false --install-links=false
+          npm ci --include-workspace-root=false --workspace common
 
+      # 2) Build common so dist/ exists BEFORE we copy it into the lambda's node_modules
       - name: 🛠 Build common
         run: npm run -w common build
 
+      # 3) Install the target lambda (dev deps included) with real copies (no symlinks).
+      #    This copies @wedding/common (now with built dist/) into the lambda's node_modules.
+      - name: 📦 Install lambda workspace (no symlinks)
+        run: |
+          npm ci --include-workspace-root=false \
+            --workspace lambdas/${{ github.event.inputs.lambda }} \
+            --install-links=false
+
+      # 4) Build the lambda (uses its local dev deps)
       - name: 🛠 Build Lambda
         run: npm run -w lambdas/${{ github.event.inputs.lambda }} build
 
+      # Optional: ensure common actually emitted at least one .d.ts (sanity check)
       - name: 🔎 Verify common types emitted
         run: |
           test -n "$(find common/dist -name '*.d.ts' -print -quit)" || (echo "❌ No type declarations emitted by @wedding/common" && exit 1)
 
+      # 5) Prune dev deps INSIDE the lambda workspace to slim the package
       - name: 🧹 Prune dev deps in Lambda
         run: npm prune -w lambdas/${{ github.event.inputs.lambda }} --omit=dev
 
+      # 6) Package using the lambda's own npm script, then move the zip to repo root for upload
       - name: 📦 Package Lambda
         run: |
           npm run -w lambdas/${{ github.event.inputs.lambda }} zip
