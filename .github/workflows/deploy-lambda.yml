@@ -34,11 +34,11 @@ jobs:
         working-directory: lambdas/${{ github.event.inputs.lambda }}
         run: |
           mkdir -p node_modules/@wedding
-          cp -r ../../common/dist node_modules/@wedding/common      
+          cp -r ../../common/dist/* node_modules/@wedding/common/  
 
       - name: 🛠 Build Lambda
         working-directory: lambdas/${{ github.event.inputs.lambda }}
-        run: npm run build:prod
+        run: npm run build
 
       - name: 📦 Package Lambda
         working-directory: lambdas/${{ github.event.inputs.lambda }}
