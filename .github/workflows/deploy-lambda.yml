@@ -30,6 +30,12 @@ jobs:
         working-directory: common
         run: npm run build
 
+      - name: 🔍 Verify common build output
+        working-directory: common
+        run: |
+          ls -la dist/
+          [ -f dist/index.d.ts ] || exit 1
+
       - name: 📦 Add common in lambda
         working-directory: lambdas/${{ github.event.inputs.lambda }}
         run: |
