@@ -1,0 +1,29 @@
+{
+  "name": "comment-creation",
+  "version": "1.0.0",
+  "description": "Lambda to create comment for a given photo",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sidec15/wedding-sc-be.git"
+  },
+  "author": "sidec15",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/sidec15/wedding-sc-be/issues"
+  },
+  "homepage": "https://github.com/sidec15/wedding-sc-be#readme",
+  "dependencies": {
+    "@wedding/common": "file:../../common"
+  },
+  "devDependencies": {
+    "@aws-sdk/client-dynamodb": "^3.864.0",
+    "@types/aws-lambda": "^8.10.152",
+    "@types/node": "^24.2.1",
+    "typescript": "^5.9.2",
+    "ulid": "^3.0.1"
+  }
+}
