@@ -49,7 +49,7 @@ wedding-sc-be/
      "version": "1.0.0",
      "main": "dist/handler.js",
      "scripts": {
-       "build": "tsc -b",
+       "build": "tsc",
        "build:prod": "npm run build && npm prune --production",
        "zip": "zip -r lambda.zip dist/handler.js node_modules package.json"
      },
@@ -65,14 +65,26 @@ wedding-sc-be/
 
 3. **Add TypeScript config** (`tsconfig.json`):
    ```json
-   {
-     "extends": "../../tsconfig.json",
-     "compilerOptions": {
-       "outDir": "dist",
-       "rootDir": "src"
-     },
-     "include": ["src"]
-   }
+  {
+    "compilerOptions": {
+      "target": "ES2020",
+      "module": "CommonJS",
+      "lib": ["ES2020"],
+      "outDir": "dist",
+      "rootDir": "src",
+      "strict": true,
+      "esModuleInterop": true,
+      "moduleResolution": "node",
+      "resolveJsonModule": true,
+      "skipLibCheck": true,
+      "composite": true
+    },
+    "references": [
+      { "path": "../../common" }
+    ],
+    "include": ["src/**/*.ts"],
+    "exclude": ["node_modules", "dist", "**/*.spec.ts"]
+  }
    ```
 
 4. **Implement the Lambda** in `src/handler.ts` and export `handler`.
