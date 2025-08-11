@@ -1,102 +1,136 @@
-# Wedding Backend Services
+# Wedding Serverless Backend
 
-![AWS Lambda](https://img.shields.io/badge/AWS_Lambda-FF9900?style=for-the-badge&logo=amazonaws&logoColor=white)
-![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
-![NPM Workspaces](https://img.shields.io/badge/NPM_Workspaces-CB3837?style=for-the-badge&logo=npm&logoColor=white)
+This repository contains the **serverless backend** for the Wedding project.  
+It is built around **AWS Lambda functions** written in TypeScript and packaged individually for deployment.  
+The backend is designed for easy development, local testing, and reliable deployment to AWS.
 
-## Project Structure
+---
 
-wedding-be/
-├── common/               # Shared code library
-│   ├── src/              # TypeScript sources
-│   ├── dist/             # Compiled output
-│   ├── package.json      # @wedding/common package
+## 📂 Project Structure
+
+```
+wedding-sc-be/
+├── common/                # Shared library used by multiple lambdas
+│   ├── src/               # TypeScript source code
+│   ├── dist/              # Compiled output (created after build)
+│   ├── package.json       # Dependencies and scripts
+│   └── tsconfig.json
+│
 ├── lambdas/
-│   ├── contact-us/       # Contact form handler
-│   ├── email-dispatcher/ # Email processing
-│   └── ...              # Other Lambda functions
-├── package.json         # Root workspace config
-└── tsconfig.json        # Base TypeScript config
+│   ├── email-dispatcher/  # Lambda for sending emails
+│   │   ├── src/
+│   │   ├── dist/
+│   │   ├── package.json   # Includes "@wedding/common": "file:../../common"
+│   │   └── tsconfig.json
+│   │
+│   └── contact-us/        # Lambda for contact form submissions
+│       ├── src/
+│       ├── dist/
+│       ├── package.json   # Includes "@wedding/common": "file:../../common"
+│       └── tsconfig.json
+│
+├── .github/workflows/     # GitHub Actions workflows for packaging and deployment
+└── README.md
+```
 
-## Prerequisites
+---
 
-- Node.js 18+
-- npm 9+ (comes with Node 18)
-- AWS CLI (for deployment)
+## ⚙️ Adding a New Lambda
 
-## Setup
+1. **Create the Lambda folder** under `lambdas/`:
+   ```
+   lambdas/my-new-lambda/
+   ```
 
-1. Install dependencies (from project root):
-   npm install
+2. **Initialize package.json** (must depend on the shared `common` package):
+   ```json
+   {
+     "name": "my-new-lambda",
+     "version": "1.0.0",
+     "main": "dist/handler.js",
+     "scripts": {
+       "build": "tsc -b",
+       "build:prod": "npm run build && npm prune --production",
+       "zip": "zip -r lambda.zip dist/handler.js node_modules package.json"
+     },
+     "dependencies": {
+       "@wedding/common": "file:../../common",
+       "some-other-dep": "^1.2.3"
+     },
+     "devDependencies": {
+       "typescript": "^5.0.0"
+     }
+   }
+   ```
 
-2. Build all packages:
-   npm run build
+3. **Add TypeScript config** (`tsconfig.json`):
+   ```json
+   {
+     "extends": "../../tsconfig.json",
+     "compilerOptions": {
+       "outDir": "dist",
+       "rootDir": "src"
+     },
+     "include": ["src"]
+   }
+   ```
 
-## Development Workflows
+4. **Implement the Lambda** in `src/handler.ts` and export `handler`.
 
-### Build Specific Packages
+5. **Test locally**:
+   ```bash
+   cd common
+   npm ci && npm run build
 
-| Command                            | Description              |
-|------------------------------------|--------------------------|
-| npm run build -w @wedding/common   | Build only shared code   |
-| npm run build -w contact-us        | Build single Lambda      |
-| npm run build -ws                  | Build all packages       |
+   cd ../lambdas/my-new-lambda
+   npm ci
+   npm run build:prod
+   npm run zip
+   ```
 
-### Run Tests (Example)
-   npm test -w contact-us
+6. **Deploy via GitHub Actions** by selecting the new lambda in the workflow dispatch input.
 
-## Deployment
+---
 
-### Deploy Single Lambda
-   cd lambdas/contact-us
-   zip -r lambda.zip dist/ node_modules/
-   aws lambda update-function-code \
-     --function-name wedding-contact-us \
-     --zip-file fileb://lambda.zip
+## ⚡ Speeding Up Local Development
 
-### Deploy All (via CI/CD)
-   npm run deploy
+- **Avoid reinstalling everything**:
+  - Only run `npm ci` in `common/` if its dependencies changed.
+  - Only run `npm ci` in your lambda folder if its dependencies changed.
+- **Incremental builds**:
+  - Use `tsc -b --watch` for local TypeScript builds to speed up feedback.
+- **Skip zipping locally**:
+  - You can test that dependencies are correctly installed without creating the `.zip`:
+    ```bash
+    cd common && npm ci && npm run build
+    cd ../lambdas/email-dispatcher && npm ci && npm run build:prod
+    ls -l node_modules/@wedding/common/dist/index.js
+    ```
+- **Run lambdas locally** with tools like `ts-node` or `aws-lambda-ric` to simulate AWS Lambda runtime.
 
-## Workspace Management
+---
 
-### Add New Lambda
-1. Create folder under lambdas/
-2. Initialize package:
-   cd lambdas/new-lambda
-   npm init -y
-3. Add to root package.json workspaces:
-   "workspaces": [
-     "common",
-     "lambdas/*"
-   ]
+## 🚫 Why We Don't Use npm Workspaces
 
-## Shared Code Usage
+We initially considered **npm workspaces** with `nohoist` for dependency management, but there were several drawbacks:
 
-Import from common package:
-   import { Logger } from '@wedding/common';
-   Logger.log('Lambda initialized');
+- **No native `nohoist` support in npm**: Unlike Yarn, npm workspaces cannot prevent hoisting without hacks.
+- **Incomplete Lambda packaging**: With workspaces, Lambda `node_modules/` often missed required dependencies at runtime (since hoisted packages are stored in the repo root).
+- **Complex install scripts**: Ensuring `node_modules` contained the correct dependencies for each lambda required custom post-install steps and tarball packing for `@wedding/common`.
+- **Slower CI/CD**: Workaround scripts increased build complexity and deployment times.
 
-## CI/CD Integration
+By switching to **`file:` dependencies** in each lambda's `package.json` (e.g., `"@wedding/common": "file:../../common"`):
+- Each lambda has its own **complete** `node_modules` tree.
+- Builds are **simpler** and **predictable**.
+- Deployment ZIPs always contain all required dependencies without extra processing.
 
-GitHub Actions example:
-   - name: Build
-     run: |
-       npm ci
-       npm run build
-       
-   - name: Deploy
-     working-directory: lambdas/contact-us
-     run: |
-       zip -r lambda.zip dist/ node_modules/
-       aws lambda update-function-code ...
+---
 
-## Troubleshooting
+## 📌 Deployment Flow Summary
 
-Issue: Cannot find module '@wedding/common'
-Solution:
-   rm -rf node_modules package-lock.json
-   npm install
-   npm run build -w @wedding/common
+1. Build **common** first.
+2. Install + build the lambda.
+3. Zip `dist/`, `node_modules/`, and `package.json`.
+4. Upload to AWS Lambda.
 
-Issue: TypeScript path errors
-Verify paths in Lambda's tsconfig.json points to ../../common/dist
+For details, see `.github/workflows/package-deploy-lambda.yml`.
