@@ -1,4 +1,4 @@
-name: Package & Deploy Lambda
+name: 🚀 Package & Deploy Lambda (no workspaces)
 
 defaults:
   run:
@@ -18,112 +18,73 @@ on:
       function_name:
         description: "AWS Lambda function name"
         type: string
-        required: false
-        default: "email-dispatcher"
+        required: true
+        default: email-dispatcher
       region:
         description: "AWS region"
         type: string
-        required: false
+        required: true
         default: eu-west-1
 
 env:
   NODE_VERSION: "22"
 
 jobs:
-  build-package-deploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
     permissions:
       contents: read
       id-token: write
 
     steps:
-      - name: Checkout
+      - name: 🧳 Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: 🧰 Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
 
-      - name: Resolve metadata (folder, function, region)
-        id: meta
-        run: |
-          FOLDER_INPUT="${{ github.event.inputs.folder }}"
-          NAME_INPUT="${{ github.event.inputs.function_name }}"
-          REGION_INPUT="${{ github.event.inputs.region }}"
-
-          # Default function name to folder name if empty
-          if [[ -z "$NAME_INPUT" ]]; then
-            NAME_INPUT="$FOLDER_INPUT"
-          fi
-
-          echo "lambda_folder=$FOLDER_INPUT"   >> $GITHUB_OUTPUT
-          echo "lambda_name=$NAME_INPUT"       >> $GITHUB_OUTPUT
-          echo "region=$REGION_INPUT"          >> $GITHUB_OUTPUT
-          echo "zip_name=${NAME_INPUT}.zip"    >> $GITHUB_OUTPUT
-
-      - name: Configure AWS credentials
+      - name: 🔑 Configure AWS
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ steps.meta.outputs.region }}
+          aws-region: ${{ github.event.inputs.region }}
 
-      - name: npm ci (workspaces)
-        run: npm ci
-
-      - name: Build common
-        run: npm run build --workspace common
-
-      - name: Build lambda
-        run: npx tsc -b "lambdas/${{ steps.meta.outputs.lambda_folder }}"
-
-      - name: Pack @wedding/common
-        id: pack
+      - name: 🛠️ Install + Build common
         run: |
-          TARBALL="$(npm pack --silent ./common | tail -n1 | tr -d '\r')"
-          [[ -f "$TARBALL" ]] || { echo "Tarball not found"; exit 1; }
-          echo "tarball_abs=$(pwd -P)/$TARBALL" >> $GITHUB_OUTPUT
+          cd common
+          npm ci
+          npm run build
 
-      - name: Install lambda deps (workspace, nested)
+      - name: 🧱 Install + Build (prod) lambda
         run: |
-          npm ci --omit=dev --workspace "lambdas/${{ steps.meta.outputs.lambda_folder }}" --install-strategy=nested
-          rm -rf "lambdas/${{ steps.meta.outputs.lambda_folder }}/node_modules/@wedding/common" || true
-          npm install --omit=dev --no-save \
-            --workspace "lambdas/${{ steps.meta.outputs.lambda_folder }}" \
-            --install-strategy=nested \
-            "${{ steps.pack.outputs.tarball_abs }}"
+          cd "lambdas/${{ github.event.inputs.folder }}"
+          npm ci
+          npm run build:prod
 
-      - name: Sanity checks
+      - name: 📦 Zip lambda
         run: |
-          test -f "lambdas/${{ steps.meta.outputs.lambda_folder }}/node_modules/@wedding/common/dist/index.js" || (echo "common dist missing" && exit 1)
-          node -e "require('lambdas/${{ steps.meta.outputs.lambda_folder }}/node_modules/@wedding/common'); console.log('ok common')"
-          node -e "require('lambdas/${{ steps.meta.outputs.lambda_folder }}/dist/handler.js'); console.log('ok handler')"
+          cd "lambdas/${{ github.event.inputs.folder }}"
+          npm run zip
+          test -f lambda.zip || (echo "lambda.zip not found" && exit 1)
+          # quick peek
+          unzip -l lambda.zip | sed -n '1,25p'
 
-      - name: "Create ZIP (flat root: dist/, node_modules/, package.json)"
-        run: |
-          rm -f "${{ steps.meta.outputs.zip_name }}"
-          pushd "lambdas/${{ steps.meta.outputs.lambda_folder }}" >/dev/null
-          zip -r "../../${{ steps.meta.outputs.zip_name }}" dist node_modules package.json -x "**/*.map"
-          popd >/dev/null
-          ls -lh "${{ steps.meta.outputs.zip_name }}"
-
-      - name: Deploy to AWS Lambda
+      - name: ☁️ Deploy to AWS Lambda
         run: |
           aws lambda update-function-code \
-            --function-name "${{ steps.meta.outputs.lambda_name }}" \
-            --zip-file "fileb://${{ steps.meta.outputs.zip_name }}" \
+            --function-name "${{ github.event.inputs.function_name }}" \
+            --zip-file "fileb://lambdas/${{ github.event.inputs.folder }}/lambda.zip" \
             --publish \
-            --region "${{ steps.meta.outputs.region }}"
+            --region "${{ github.event.inputs.region }}"
 
-      - name: Cleanup tarball
-        run: rm -f "${{ steps.pack.outputs.tarball_abs }}"
-
-      - name: Upload ZIP artifact
+      - name: 🗂️ Upload ZIP artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ steps.meta.outputs.zip_name }}
-          path: ${{ steps.meta.outputs.zip_name }}
+          name: ${{ github.event.inputs.function_name }}.zip
+          path: lambdas/${{ github.event.inputs.folder }}/lambda.zip
           if-no-files-found: error
           retention-days: 7
