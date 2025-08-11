@@ -1,8 +1,0 @@
-{
-  "files": [],
-  "references": [
-    { "path": "./common" },
-    { "path": "./lambdas/email-dispatcher" },
-    { "path": "./lambdas/contact-us" }
-  ]
-}

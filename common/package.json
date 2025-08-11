@@ -8,7 +8,7 @@
     "dist/**/*"
   ],
   "scripts": {
-    "build": "tsc -b"
+    "build": "tsc"
   },
   "dependencies": {
     "luxon": "^3.7.1",
