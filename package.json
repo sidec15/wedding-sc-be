@@ -7,8 +7,8 @@
   ],
   "scripts": {
     "bootstrap": "npm install --workspaces",
-    "build": "tsc -b tsconfig.build.json",
-    "rebuild": "npm run clean && tsc -b tsconfig.build.json",
+    "build": "tsc -b tsconfig.json",
+    "rebuild": "npm run clean && tsc -b tsconfig.json",
     "build:common": "tsc -b common",
     "build:lambda:email-dispatcher": "tsc -b lambdas/email-dispatcher",
     "build:lambda:contact-us": "tsc -b lambdas/contact-us",
