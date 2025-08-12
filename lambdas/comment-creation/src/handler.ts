@@ -4,13 +4,13 @@ import { ulid } from "ulid";
 import { DateTime } from "luxon";
 import { ILogger, Logger } from "@wedding/common";
 import * as webUtils from "@wedding/common/dist/utils/web.utils";
-
-// todo_here: create lambda to subscribe for notification events
+import { PublishCommand, SNSClient } from "@aws-sdk/client-sns";
 
 const ddb = new DynamoDBClient({});
 const COMMENTS_TABLE = process.env.COMMENTS_TABLE!;
 
 const logger: ILogger = new Logger();
+const snsClient = new SNSClient({ region: process.env.AWS_REGION });
 
 // ---------- Config from ENV with defaults ----------
 const AUTHOR_NAME_REGEX = process.env.AUTHOR_NAME_REGEX
@@ -39,6 +39,12 @@ interface Comment {
   createdAt: string;
   authorName: string;
   content: string;
+}
+
+interface CommentCreatedEvent {
+  type: "comment-created";
+  photoId: string;
+  commentId: string;
 }
 
 // ---------- Validation Helpers ----------
@@ -145,6 +151,29 @@ const putComment = async (req: CreateCommentRequest): Promise<Comment> => {
   };
 };
 
+// Publish to SNS topic
+const publishSnsEvent = async (e: CommentCreatedEvent) => {
+  try {
+    const topicArn = process.env.COMMENT_SNS_TOPIC_ARN;
+
+    const publishCommand = new PublishCommand({
+      TopicArn: topicArn,
+      Message: JSON.stringify(e),
+    });
+    if (logger.isDebugEnabled()) {
+      logger.debug(
+        `Publishing SNS event with command: ${JSON.stringify(publishCommand)}`
+      );
+    }
+
+    await snsClient.send(publishCommand);
+
+    logger.info(`Correctly published event on topic: ${topicArn}`);
+  } catch (error) {
+    logger.error(`Error publishing SNS event`, error);
+  }
+};
+
 // ---------- Lambda Handler ----------
 export const handler: APIGatewayProxyHandlerV2 = async (event) => {
   logger.info("Received request to create comment", {
@@ -170,7 +199,15 @@ export const handler: APIGatewayProxyHandlerV2 = async (event) => {
       commentId: comment.commentId,
     });
 
-    return webUtils.success(201, comment);
+    const result = webUtils.success(201, comment);
+
+    await publishSnsEvent({
+      type: "comment-created",
+      photoId: comment.photoId,
+      commentId: comment.commentId,
+    });
+
+    return result;
   } catch (err) {
     logger.error("Error creating comment", err);
     return webUtils.failure(

@@ -22,6 +22,7 @@
   },
   "homepage": "https://github.com/sidec15/wedding-sc-be#readme",
   "dependencies": {
+    "@aws-sdk/client-sns": "^3.864.0",
     "@wedding/common": "file:../../common",
     "luxon": "^3.7.1",
     "ulid": "^3.0.1"
