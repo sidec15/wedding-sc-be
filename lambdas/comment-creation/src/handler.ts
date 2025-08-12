@@ -5,6 +5,8 @@ import { DateTime } from "luxon";
 import { ILogger, Logger } from "@wedding/common";
 import * as webUtils from "@wedding/common/dist/utils/web.utils";
 
+// todo_here: create lambda to subscribe for notification events
+
 const ddb = new DynamoDBClient({});
 const COMMENTS_TABLE = process.env.COMMENTS_TABLE!;
 
