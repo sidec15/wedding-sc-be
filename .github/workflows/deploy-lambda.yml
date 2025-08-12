@@ -24,6 +24,7 @@ on:
           - email-dispatcher
           - wedding-contact-us
           - wedding-comment-creation
+        default: email-dispatcher
       region:
         description: "AWS region"
         type: string
