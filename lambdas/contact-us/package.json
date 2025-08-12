@@ -9,7 +9,7 @@
     "dev": "ts-node src/main.ts",
     "start": "node dist/main.js",
     "zip": "zip -r lambda.zip dist/handler.js node_modules package.json",
-    "package": "npm run build:prod && npm run zip"
+    "clean:all": "rimraf ./dist && rimraf .nyc_output && rimraf .yalc && rimraf yalc.lock && rimraf node_modules"
   },
   "repository": {
     "type": "git",
