@@ -3,7 +3,7 @@ import { DynamoDBClient, PutItemCommand } from "@aws-sdk/client-dynamodb";
 import { ulid } from "ulid";
 import { DateTime } from "luxon";
 import { ILogger, Logger } from "@wedding/common";
-import * as webUtils from "@wedding/common/dist/utils/web.utils"
+import * as webUtils from "@wedding/common/dist/utils/web.utils";
 
 const ddb = new DynamoDBClient({});
 const COMMENTS_TABLE = process.env.COMMENTS_TABLE!;
@@ -22,7 +22,7 @@ const CONTENT_MAX_LENGTH = process.env.CONTENT_MAX_LENGTH
 // Log configuration at silly level
 logger.silly("Validation config loaded", {
   AUTHOR_NAME_REGEX: AUTHOR_NAME_REGEX.toString(),
-  CONTENT_MAX_LENGTH
+  CONTENT_MAX_LENGTH,
 });
 
 interface CreateCommentRequest {
@@ -38,7 +38,6 @@ interface Comment {
   authorName: string;
   content: string;
 }
-
 
 // ---------- Validation Helpers ----------
 const validateAuthorName = (value: any): string | null => {
@@ -81,13 +80,17 @@ const parseAndValidateRequest = (event: any): CreateCommentRequest | null => {
 
   const authorName = validateAuthorName(body.authorName);
   if (!authorName) {
-    logger.error("Validation failed: Invalid authorName", { providedValue: body.authorName });
+    logger.error("Validation failed: Invalid authorName", {
+      providedValue: body.authorName,
+    });
     return null;
   }
 
   const content = validateContent(body.content);
   if (!content) {
-    logger.error("Validation failed: Invalid content", { providedValue: body.content });
+    logger.error("Validation failed: Invalid content", {
+      providedValue: body.content,
+    });
     return null;
   }
 
@@ -104,33 +107,39 @@ const putComment = async (req: CreateCommentRequest): Promise<Comment> => {
     table: COMMENTS_TABLE,
     photoId: req.photoId,
     commentId,
-    createdAt
+    createdAt,
   });
 
-  await ddb.send(new PutItemCommand({
-    TableName: COMMENTS_TABLE,
-    Item: {
-      photoId: { S: req.photoId },
-      "createdAt#commentId": { S: sk },
-      commentId: { S: commentId },
-      createdAt: { S: createdAt },
-      authorName: { S: req.authorName },
-      content: { S: req.content }
-    },
-    ConditionExpression: "attribute_not_exists(photoId) AND attribute_not_exists(#sk)",
-    ExpressionAttributeNames: {
-      "#sk": "createdAt#commentId"
-    }
-  }));
+  await ddb.send(
+    new PutItemCommand({
+      TableName: COMMENTS_TABLE,
+      Item: {
+        photoId: { S: req.photoId },
+        "createdAt#commentId": { S: sk },
+        commentId: { S: commentId },
+        createdAt: { S: createdAt },
+        authorName: { S: req.authorName },
+        content: { S: req.content },
+      },
+      ConditionExpression:
+        "attribute_not_exists(photoId) AND attribute_not_exists(#sk)",
+      ExpressionAttributeNames: {
+        "#sk": "createdAt#commentId",
+      },
+    })
+  );
 
-  logger.info("Comment successfully stored", { photoId: req.photoId, commentId });
+  logger.info("Comment successfully stored", {
+    photoId: req.photoId,
+    commentId,
+  });
 
   return {
     photoId: req.photoId,
     commentId,
     createdAt,
     authorName: req.authorName,
-    content: req.content
+    content: req.content,
   };
 };
 
@@ -138,27 +147,34 @@ const putComment = async (req: CreateCommentRequest): Promise<Comment> => {
 export const handler: APIGatewayProxyHandlerV2 = async (event) => {
   logger.info("Received request to create comment", {
     pathParameters: event.pathParameters,
-    requestId: event.requestContext?.requestId
+    requestId: event.requestContext?.requestId,
   });
 
   try {
     const req = parseAndValidateRequest(event);
     if (!req) {
       logger.error("Request validation failed — aborting comment creation");
-      return webUtils.failure(400, "validation_failed", "Invalid or missing input");
+      return webUtils.failure(
+        400,
+        "validation_failed",
+        "Invalid or missing input"
+      );
     }
 
     const comment = await putComment(req);
 
     logger.info("Comment creation completed successfully", {
       photoId: comment.photoId,
-      commentId: comment.commentId
+      commentId: comment.commentId,
     });
 
     return webUtils.success(201, comment);
-
   } catch (err) {
     logger.error("Error creating comment", err);
-    return webUtils.failure(500, "internal_service_error", "An unexpected error occurred");
+    return webUtils.failure(
+      500,
+      "internal_service_error",
+      "An unexpected error occurred"
+    );
   }
 };
