@@ -17,7 +17,8 @@
   },
   "homepage": "https://github.com/sidec15/wedding-sc-be#readme",
   "dependencies": {
-    "@wedding/common": "file:../../common"
+    "@wedding/common": "file:../../common",
+    "luxon": "^3.7.1"
   },
   "devDependencies": {
     "@aws-sdk/client-dynamodb": "^3.864.0",

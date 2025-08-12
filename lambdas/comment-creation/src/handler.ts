@@ -1,7 +1,9 @@
 import { APIGatewayProxyHandlerV2 } from "aws-lambda";
 import { DynamoDBClient, PutItemCommand } from "@aws-sdk/client-dynamodb";
 import { ulid } from "ulid";
+import { DateTime } from "luxon";
 import { ILogger, Logger } from "@wedding/common";
+import * as webUtils from "@wedding/common/dist/utils/web.utils"
 
 const ddb = new DynamoDBClient({});
 const COMMENTS_TABLE = process.env.COMMENTS_TABLE!;
@@ -37,15 +39,6 @@ interface Comment {
   content: string;
 }
 
-// ---------- Response Helpers ----------
-const success = (statusCode: number, body: any) => ({
-  statusCode,
-  headers: { "content-type": "application/json" },
-  body: JSON.stringify(body)
-});
-
-const failure = (statusCode: number, errorCode: string, message: string) =>
-  success(statusCode, { errorCode, message });
 
 // ---------- Validation Helpers ----------
 const validateAuthorName = (value: any): string | null => {
@@ -104,7 +97,7 @@ const parseAndValidateRequest = (event: any): CreateCommentRequest | null => {
 
 const putComment = async (req: CreateCommentRequest): Promise<Comment> => {
   const commentId = `c_${ulid()}`;
-  const createdAt = new Date().toISOString();
+  const createdAt = DateTime.utc().toISO(); // Luxon timestamp
   const sk = `${createdAt}#${commentId}`;
 
   logger.info("Storing comment in DynamoDB", {
@@ -152,7 +145,7 @@ export const handler: APIGatewayProxyHandlerV2 = async (event) => {
     const req = parseAndValidateRequest(event);
     if (!req) {
       logger.error("Request validation failed — aborting comment creation");
-      return failure(400, "validation_failed", "Invalid or missing input");
+      return webUtils.failure(400, "validation_failed", "Invalid or missing input");
     }
 
     const comment = await putComment(req);
@@ -162,10 +155,10 @@ export const handler: APIGatewayProxyHandlerV2 = async (event) => {
       commentId: comment.commentId
     });
 
-    return success(201, comment);
+    return webUtils.success(201, comment);
 
   } catch (err) {
     logger.error("Error creating comment", err);
-    return failure(500, "internal_service_error", "An unexpected error occurred");
+    return webUtils.failure(500, "internal_service_error", "An unexpected error occurred");
   }
 };
