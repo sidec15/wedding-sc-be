@@ -14,12 +14,16 @@ on:
         options:
           - email-dispatcher
           - contact-us
+          - comment-creation
         default: email-dispatcher
       function_name:
         description: "AWS Lambda function name"
-        type: string
+        type: choice
         required: true
-        default: email-dispatcher
+        options:
+          - email-dispatcher
+          - wedding-contact-us
+          - wedding-comment-creation
       region:
         description: "AWS region"
         type: string
