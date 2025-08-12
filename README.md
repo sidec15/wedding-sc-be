@@ -129,3 +129,54 @@ By switching to **`file:` dependencies** in each lambda's `package.json` (e.g., 
 4. Upload to AWS Lambda.
 
 For details, see `.github/workflows/package-deploy-lambda.yml`.
+
+## Workspace Utility Script
+
+This project includes a custom Node.js script (`scripts/workspace.js`) that helps you perform bulk operations across the `common` folder and all AWS Lambda function folders under `lambdas/`.
+
+Unlike npm workspaces, this script does **not** rely on the workspace feature — it’s fully custom to avoid AWS Lambda packaging issues.
+
+### Features
+- Run a `clean:all` script in `common` and each Lambda folder.
+- Install dependencies in `common` and each Lambda folder.
+- Skip folders that don’t have the required script or `package.json`.
+
+### Available Modes
+- **clean** – runs `npm run clean:all` in each target folder (if available).
+- **install** – runs `npm i` in each target folder.
+
+### Usage
+
+You can run the script directly:
+```bash
+node scripts/workspace.js --mode clean
+node scripts/workspace.js --mode install
+```
+
+Or use the npm scripts defined in the root `package.json`:
+```bash
+npm run ws:clean
+npm run ws:install
+npm run ws:help
+```
+
+### Options
+- `-m, --mode`  : Mode to run (`clean` or `install`) — **required**.
+- `-h, --help`  : Show usage help.
+
+### Example
+```bash
+npm run ws:clean
+```
+This will:
+1. Look for `package.json` in `common` and each folder inside `lambdas/`.
+2. Run `npm run clean:all` in each of them if the script is defined.
+3. Skip any folder missing `package.json` or `clean:all` script.
+
+```bash
+npm run ws:install
+```
+This will:
+1. Look for `package.json` in `common` and each folder inside `lambdas/`.
+2. Run `npm i` in each folder.
+3. Skip any folder missing `package.json`.

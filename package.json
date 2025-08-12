@@ -1,0 +1,22 @@
+{
+  "name": "wedding-sc-be",
+  "version": "1.0.0",
+  "description": "Root project",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sidec15/wedding-sc-be.git"
+  },
+  "author": "sidec15",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/sidec15/wedding-sc-be/issues"
+  },
+  "homepage": "https://github.com/sidec15/wedding-sc-be#readme",
+  "scripts": {
+    "clean:all": "rimraf node_modules",
+    "ws:help": "node scripts/workspace.js --help",
+    "ws:clean": "node scripts/workspace.js --mode clean",
+    "ws:install": "node scripts/workspace.js --mode install"
+  }
+}
