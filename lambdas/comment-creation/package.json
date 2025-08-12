@@ -4,7 +4,12 @@
   "description": "Lambda to create comment for a given photo",
   "main": "main.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "tsc",
+    "build:prod": "npm run build && npm prune --production",
+    "dev": "ts-node src/main.ts",
+    "start": "node dist/main.js",
+    "zip": "zip -r lambda.zip dist/handler.js node_modules package.json",
+    "package": "npm run build:prod && npm run zip"
   },
   "repository": {
     "type": "git",
