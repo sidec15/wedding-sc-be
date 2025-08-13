@@ -1,32 +1,33 @@
 import { APIGatewayProxyHandlerV2 } from "aws-lambda";
 import { DynamoDBClient, PutItemCommand } from "@aws-sdk/client-dynamodb";
-import { ulid } from "ulid";
-import { DateTime } from "luxon";
-import { Comment, CommentEvent, ILogger, Logger } from "@wedding/common";
+import {
+  ILogger,
+  Logger,
+} from "@wedding/common";
 import * as webUtils from "@wedding/common/dist/utils/web.utils";
-import { PublishCommand, SNSClient } from "@aws-sdk/client-sns";
 
 const conf = {
   db: {
     region: process.env.AWS_REGION,
     tables: {
-      comments: process.env.SUBSCRIPTIONS_TABLE,
+      subscriptions: process.env.SUBSCRIPTIONS_TABLE,
     },
   },
 };
 
 const ddb = new DynamoDBClient({});
-const COMMENTS_TABLE = conf.db.tables.comments!;
+const SUBSCRIPTIONS_TABLE = conf.db.tables.subscriptions;
 
 const logger: ILogger = new Logger();
-const snsClient = new SNSClient({ region: conf.db.region });
 
 interface CreateSubscriptionRequest {
   photoId: string;
   email: string;
 }
 
-const parseAndValidateRequest = (event: any): CreateSubscriptionRequest | null => {
+const parseAndValidateRequest = (
+  event: any
+): CreateSubscriptionRequest | null => {
   logger.debug("Parsing and validating request");
 
   const photoId = event.pathParameters?.photoId;
@@ -49,81 +50,43 @@ const parseAndValidateRequest = (event: any): CreateSubscriptionRequest | null =
     return null;
   }
 
-  logger.info("Request validated successfully", { photoId });
-  return { photoId, authorName, content };
+  const email = webUtils.validateEmail(body.email);
+  if (!email) {
+    logger.error("Validation failed: Invalid email format", { email: body.email });
+    return null;
+  }
+
+  logger.info("Request validated successfully", { photoId, email });
+  return { email, photoId };
 };
 
-const putSubscription = async (req: CreateSubscriptionRequest): Promise<Comment> => {
-  const commentId = `c_${ulid()}`;
-  const createdAt = DateTime.utc().toISO(); // Luxon timestamp
-  const sk = `${createdAt}#${commentId}`;
-
-  logger.info("Storing comment in DynamoDB", {
-    table: COMMENTS_TABLE,
+const putSubscription = async (
+  req: CreateSubscriptionRequest
+): Promise<void> => {
+  logger.info("Storing subscription in DynamoDB", {
+    table: SUBSCRIPTIONS_TABLE,
     photoId: req.photoId,
-    commentId,
-    createdAt,
+    email: req.email,
   });
 
   await ddb.send(
     new PutItemCommand({
-      TableName: COMMENTS_TABLE,
+      TableName: SUBSCRIPTIONS_TABLE,
       Item: {
         photoId: { S: req.photoId },
-        "createdAt#commentId": { S: sk },
-        commentId: { S: commentId },
-        createdAt: { S: createdAt },
-        authorName: { S: req.authorName },
-        content: { S: req.content },
+        email: { S: req.email.toLowerCase() }, // Always lowercase for SK
       },
       ConditionExpression:
-        "attribute_not_exists(photoId) AND attribute_not_exists(#sk)",
-      ExpressionAttributeNames: {
-        "#sk": "createdAt#commentId",
-      },
+        "attribute_not_exists(photoId) AND attribute_not_exists(email)",
     })
   );
 
-  logger.info("Comment successfully stored", {
-    photoId: req.photoId,
-    commentId,
-  });
-
-  return {
-    photoId: req.photoId,
-    commentId,
-    createdAt,
-    authorName: req.authorName,
-    content: req.content,
-  };
-};
-
-// Publish to SNS topic
-const publishSnsEvent = async (e: CommentEvent) => {
-  try {
-    const topicArn = conf.sns.topicArn.comments;
-
-    const publishCommand = new PublishCommand({
-      TopicArn: topicArn,
-      Message: JSON.stringify(e),
-    });
-    if (logger.isDebugEnabled()) {
-      logger.debug(
-        `Publishing SNS event with command: ${JSON.stringify(publishCommand)}`
-      );
-    }
-
-    await snsClient.send(publishCommand);
-
-    logger.info(`Correctly published event on topic: ${topicArn}`);
-  } catch (error) {
-    logger.error(`Error publishing SNS event`, error);
-  }
+  logger.info("Subscription successfully stored");
 };
 
 // ---------- Lambda Handler ----------
 export const handler: APIGatewayProxyHandlerV2 = async (event) => {
-  logger.info("Received request to create comment", {
+  logger.info("Received request to create subscription", {
     pathParameters: event.pathParameters,
     requestId: event.requestContext?.requestId,
   });
@@ -131,7 +94,9 @@ export const handler: APIGatewayProxyHandlerV2 = async (event) => {
   try {
     const req = parseAndValidateRequest(event);
     if (!req) {
-      logger.error("Request validation failed — aborting comment creation");
+      logger.error(
+        "Request validation failed — aborting subscription creation"
+      );
       return webUtils.failure(
         400,
         "validation_failed",
@@ -139,20 +104,11 @@ export const handler: APIGatewayProxyHandlerV2 = async (event) => {
       );
     }
 
-    const comment = await putSubscription(req);
+    await putSubscription(req);
 
-    logger.info("Comment creation completed successfully", {
-      photoId: comment.photoId,
-      commentId: comment.commentId,
-    });
+    logger.info("Subscription creation completed successfully");
 
-    const result = webUtils.success(201, comment);
-
-    await publishSnsEvent({
-      type: "comment-created",
-      photoId: comment.photoId,
-      commentId: comment.commentId,
-    });
+    const result = webUtils.success(201, {});
 
     return result;
   } catch (err) {
