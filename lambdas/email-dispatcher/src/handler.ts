@@ -2,14 +2,6 @@ import { SNSEvent, Context } from "aws-lambda";
 import nodemailer from "nodemailer";
 import { ILogger, Logger } from "@wedding/common";
 
-interface EmailNotificationMessage {
-  type: "contact-us" | "comment-notification";
-  to: string[];
-  subject: string;
-  text?: string;
-  html?: string;
-}
-
 const logger: ILogger = new Logger();
 
 export const handler = async (

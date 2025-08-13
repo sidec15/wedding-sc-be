@@ -1,4 +1,4 @@
-// Database entities
+// Database entities ---------------------------------
 export interface Comment {
   photoId: string;
   commentId: string;
@@ -13,9 +13,17 @@ export interface CommentSubscribion {
   email: string;
 }
 
-// Messages
+// Messages --------------------------------------
 export interface CommentEvent {
   type: "comment-created";
   photoId: string;
   commentId: string;
+}
+
+export interface EmailNotificationMessage {
+  type: "contact-us" | "comment-notification";
+  to: string[];
+  subject: string;
+  text?: string;
+  html?: string;
 }
