@@ -2,7 +2,7 @@ import { APIGatewayProxyHandlerV2 } from "aws-lambda";
 import { DynamoDBClient, PutItemCommand } from "@aws-sdk/client-dynamodb";
 import { ulid } from "ulid";
 import { DateTime } from "luxon";
-import { ILogger, Logger } from "@wedding/common";
+import { Comment, CommentEvent, ILogger, Logger } from "@wedding/common";
 import * as webUtils from "@wedding/common/dist/utils/web.utils";
 import { PublishCommand, SNSClient } from "@aws-sdk/client-sns";
 
@@ -31,20 +31,6 @@ interface CreateCommentRequest {
   photoId: string;
   authorName: string;
   content: string;
-}
-
-interface Comment {
-  photoId: string;
-  commentId: string;
-  createdAt: string;
-  authorName: string;
-  content: string;
-}
-
-interface CommentCreatedEvent {
-  type: "comment-created";
-  photoId: string;
-  commentId: string;
 }
 
 // ---------- Validation Helpers ----------
@@ -152,7 +138,7 @@ const putComment = async (req: CreateCommentRequest): Promise<Comment> => {
 };
 
 // Publish to SNS topic
-const publishSnsEvent = async (e: CommentCreatedEvent) => {
+const publishSnsEvent = async (e: CommentEvent) => {
   try {
     const topicArn = process.env.COMMENT_SNS_TOPIC_ARN;
 
