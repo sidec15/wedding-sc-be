@@ -1,6 +1,6 @@
 import { SNSEvent, Context } from "aws-lambda";
 import nodemailer from "nodemailer";
-import { ILogger, Logger } from "@wedding/common";
+import { EmailNotificationMessage, ILogger, Logger } from "@wedding/common";
 
 const logger: ILogger = new Logger();
 

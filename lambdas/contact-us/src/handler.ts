@@ -1,7 +1,7 @@
 import { APIGatewayProxyHandler } from "aws-lambda";
 import { SNSClient, PublishCommand } from "@aws-sdk/client-sns";
 import axios from "axios";
-import { dateTimeUtils, ILogger, Logger } from "@wedding/common";
+import { dateTimeUtils, EmailNotificationMessage, ILogger, Logger } from "@wedding/common";
 
 interface ContactFormData {
   name: string;
@@ -62,7 +62,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         subject: `Wedding Contact Form - New message from ${body.name}`,
         text: createTextMessage(body),
         html: createHtmlMessage(body),
-      }),
+      } as EmailNotificationMessage),
       MessageAttributes: {
         source: {
           DataType: "String",
