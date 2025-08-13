@@ -1,5 +1,5 @@
 {
-  "name": "notification-manager",
+  "name": "comment-read",
   "version": "1.0.0",
   "main": "index.js",
   "repository": {
@@ -27,7 +27,6 @@
     "@types/node": "^24.2.1"
   },
   "dependencies": {
-    "@aws-sdk/client-sns": "^3.864.0",
     "@wedding/common": "file:../../common",
     "luxon": "^3.7.1"
   }
