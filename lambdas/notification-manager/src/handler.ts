@@ -1,4 +1,5 @@
 import {
+  Comment,
   CommentEvent,
   CommentSubscribion,
   ILogger,
@@ -16,11 +17,22 @@ interface EmailNotificationMessage {
   html?: string;
 }
 
+const conf = {
+  awsRegion: process.env.AWS_REGION,
+  emailTopicArn: process.env.EMAIL_SNS_TOPIC_ARN,
+  tables: {
+    subscriptions:
+      process.env.TABLE_SUBSCRIPTIONS_NAME || "photo_subscriptions",
+    comments: process.env.TABLE_COMMENTS_NAME || "photo_comments",
+  },
+  apiDomain:
+    process.env.API_DOMAIN || "https://matrimonio.api.chiaraesimone.it",
+};
+
 const logger: ILogger = new Logger();
 const ddb = new DynamoDBClient({});
-const TABLE_NAME = "photo_subscriptions";
 
-const snsClient = new SNSClient({ region: process.env.AWS_REGION });
+const snsClient = new SNSClient({ region: conf.awsRegion });
 
 export const handler = async (
   event: SNSEvent,
@@ -52,28 +64,41 @@ const handleCommentCreated = async (event: CommentEvent) => {
   const { photoId, commentId } = event;
 
   // 1) Load subscribers for the photo
-  const subscribers = await listSubscriptions(photoId);
-  if (subscribers.length === 0) {
+  const subscriptions = await listSubscriptions(photoId);
+  if (subscriptions.length === 0) {
     logger.info(`No subscribers for photo ${photoId}. Skipping notifications.`);
     return;
   }
 
-  // 2) Build base email content
-  const link =
-    permalink ?? `https://your-domain.example/photos/${photoId}#${commentId}`;
-  const subject = `New comment on photo ${photoId}`;
-  const baseText = `${authorName} added a comment:\n\n${
-    contentPreview ?? ""
-  }\n\nOpen: ${link}\n`;
-  const baseHtml = `
-    <p><strong>${escapeHtml(authorName)}</strong> added a comment:</p>
-    <blockquote>${escapeHtml(contentPreview ?? "")}</blockquote>
-    <p><a href="${link}">Open photo & thread</a></p>
-  `;
+  // 2) retrieve comment created
+  const comment = await getComment(commentId);
+
+  if (!comment) {
+    logger.info(`Comment with id ${commentId} not found.`);
+    return;
+  }
 
   // 3) Publish one email notification per (active) subscriber
   let published = 0;
-  for (const s of subscribers) {
+  for (const s of subscriptions) {
+    const subject = "Matrimonio Chiara & Simone - Nuovo commento";
+    const unsubscribeLink = `${conf.apiDomain}/photo/${photoId}/email/${s.email}`;
+    const text = createPhotoCommentNotificationText(
+      photoId,
+      comment.authorName,
+      comment.content,
+      comment.createdAt,
+      unsubscribeLink,
+      s.email
+    );
+    const html = createPhotoCommentNotificationHtml(
+      photoId,
+      comment.authorName,
+      comment.content,
+      comment.createdAt,
+      unsubscribeLink,
+      s.email
+    );
     const message: EmailNotificationMessage = {
       type: "comment-notification",
       to: [s.email],
@@ -82,7 +107,7 @@ const handleCommentCreated = async (event: CommentEvent) => {
       html,
     };
 
-    const topicArn = process.env.EMAIL_SNS_TOPIC_ARN;
+    const topicArn = conf.emailTopicArn;
 
     await snsClient.send(
       new PublishCommand({
@@ -104,7 +129,7 @@ const listSubscriptions = async (
 ): Promise<CommentSubscribion[]> => {
   const res = await ddb.send(
     new QueryCommand({
-      TableName: TABLE_NAME,
+      TableName: conf.tables.subscriptions,
       KeyConditionExpression: "photoId = :p",
       ExpressionAttributeValues: { ":p": { S: photoId } },
       ProjectionExpression: "commentId, photoId, email",
@@ -116,6 +141,28 @@ const listSubscriptions = async (
     photoId: item.photoId.S!,
     email: item.email.S!,
   }));
+};
+
+const getComment = async (commentId: string) => {
+  const res = await ddb.send(
+    new QueryCommand({
+      TableName: conf.tables.subscriptions,
+      KeyConditionExpression: "commentId = :p",
+      ExpressionAttributeValues: { ":p": { S: commentId } },
+      ProjectionExpression: "authorName, content, createdAt",
+    })
+  );
+
+  if (!res.Items?.length || res.Items.length == 0) return null;
+
+  const item = res.Items[0];
+  const comment = {
+    commentId: item.commentId.S!,
+    photoId: item.photoId.S!,
+    email: item.email.S!,
+  } as unknown as Comment;
+
+  return comment;
 };
 
 const createPhotoCommentNotificationHtml = (

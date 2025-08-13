@@ -2,6 +2,16 @@ import { SNSEvent, Context } from "aws-lambda";
 import nodemailer from "nodemailer";
 import { EmailNotificationMessage, ILogger, Logger } from "@wedding/common";
 
+const conf = {
+  smtp: {
+    host: process.env.SMTP_HOST,
+    port: Number(process.env.SMTP_PORT || 587),
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
+    isSecure: process.env.SMTP_SECURE === "true",
+  },
+};
+
 const logger: ILogger = new Logger();
 
 export const handler = async (
@@ -15,12 +25,12 @@ export const handler = async (
       ) as EmailNotificationMessage;
 
       const transporter = nodemailer.createTransport({
-        host: process.env.SMTP_HOST,
-        port: Number(process.env.SMTP_PORT || 587),
-        secure: process.env.SMTP_SECURE === "true",
+        host: conf.smtp.host,
+        port: conf.smtp.port,
+        secure: conf.smtp.isSecure,
         auth: {
-          user: process.env.SMTP_USER,
-          pass: process.env.SMTP_PASS,
+          user: conf.smtp.user,
+          pass: conf.smtp.pass,
         },
       });
 

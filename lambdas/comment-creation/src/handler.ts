@@ -6,19 +6,35 @@ import { Comment, CommentEvent, ILogger, Logger } from "@wedding/common";
 import * as webUtils from "@wedding/common/dist/utils/web.utils";
 import { PublishCommand, SNSClient } from "@aws-sdk/client-sns";
 
+const conf = {
+  db: {
+    region: process.env.AWS_REGION,
+    tables: {
+      comments: process.env.COMMENTS_TABLE,
+    },
+  },
+  authorNameRegex: process.env.AUTHOR_NAME_REGEX,
+  contentMaxLength: process.env.CONTENT_MAX_LENGTH,
+  sns:{
+    topicArn:{
+      comments: process.env.COMMENT_SNS_TOPIC_ARN
+    }
+  }
+};
+
 const ddb = new DynamoDBClient({});
-const COMMENTS_TABLE = process.env.COMMENTS_TABLE!;
+const COMMENTS_TABLE = conf.db.tables.comments!;
 
 const logger: ILogger = new Logger();
-const snsClient = new SNSClient({ region: process.env.AWS_REGION });
+const snsClient = new SNSClient({ region: conf.db.region });
 
 // ---------- Config from ENV with defaults ----------
-const AUTHOR_NAME_REGEX = process.env.AUTHOR_NAME_REGEX
-  ? new RegExp(process.env.AUTHOR_NAME_REGEX)
+const AUTHOR_NAME_REGEX = conf.authorNameRegex
+  ? new RegExp(conf.authorNameRegex)
   : /^[a-zA-ZÀ-ÿ' -]+$/;
 
-const CONTENT_MAX_LENGTH = process.env.CONTENT_MAX_LENGTH
-  ? parseInt(process.env.CONTENT_MAX_LENGTH, 10)
+const CONTENT_MAX_LENGTH = conf.contentMaxLength
+  ? parseInt(conf.contentMaxLength, 10)
   : 2000;
 
 // Log configuration at silly level
@@ -140,7 +156,7 @@ const putComment = async (req: CreateCommentRequest): Promise<Comment> => {
 // Publish to SNS topic
 const publishSnsEvent = async (e: CommentEvent) => {
   try {
-    const topicArn = process.env.COMMENT_SNS_TOPIC_ARN;
+    const topicArn = conf.sns.topicArn.comments;
 
     const publishCommand = new PublishCommand({
       TopicArn: topicArn,
