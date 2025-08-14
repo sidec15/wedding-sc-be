@@ -27,3 +27,12 @@ export interface EmailNotificationMessage {
   text?: string;
   html?: string;
 }
+
+// DTOs ---------------------------------------------
+export interface PaginatedResult<T> {
+  elements: T[];
+  cursor?: string; // opaque next-page token (base64-encoded LEK)
+  hasNext: boolean;
+  totalElements: number; // full count for this photoId
+  totalPagesCount: number;
+}
