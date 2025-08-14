@@ -12,18 +12,26 @@ on:
         type: choice
         required: true
         options:
-          - email-dispatcher
-          - contact-us
           - comment-creation
+          - comment-read
+          - contact-us
+          - email-dispatcher
+          - notification-manager
+          - subscription-create
+          - subscription-delete
         default: email-dispatcher
       function_name:
         description: "AWS Lambda function name"
         type: choice
         required: true
         options:
-          - email-dispatcher
-          - wedding-contact-us
           - wedding-comment-creation
+          - wedding-comment-read
+          - wedding-contact-us
+          - email-dispatcher
+          - wedding-notification-manager
+          - wedding-subscription-create
+          - wedding-subscription-delete
         default: email-dispatcher
       region:
         description: "AWS region"
