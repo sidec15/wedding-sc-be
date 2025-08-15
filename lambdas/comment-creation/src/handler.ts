@@ -8,7 +8,7 @@ import { PublishCommand, SNSClient } from "@aws-sdk/client-sns";
 
 const conf = {
   db: {
-    region: process.env.AWS_REGION,
+    region: process.env.DB_AWS_REGION || "eu-west-1",
     tables: {
       comments: process.env.COMMENTS_TABLE,
     },

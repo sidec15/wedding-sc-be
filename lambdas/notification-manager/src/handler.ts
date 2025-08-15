@@ -18,7 +18,7 @@ interface EmailNotificationMessage {
 }
 
 const conf = {
-  awsRegion: process.env.AWS_REGION,
+  awsRegion: process.env.MY_AWS_REGION || "eu-west-1",
   emailTopicArn: process.env.EMAIL_SNS_TOPIC_ARN,
   tables: {
     subscriptions:
