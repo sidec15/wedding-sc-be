@@ -6,7 +6,7 @@ import { ILogger, Logger, webUtils } from "@wedding/common";
 // -------- Config --------
 const conf = {
   db: {
-    region: process.env.AWS_REGION ?? "eu-west-1",
+    region: process.env.MY_AWS_REGION ?? "eu-west-1",
     tables: {
       subscriptions: process.env.SUBSCRIPTIONS_TABLE ?? "photo_subscriptions",
     },
