@@ -8,7 +8,7 @@ import * as webUtils from "@wedding/common/dist/utils/web.utils";
 
 const conf = {
   db: {
-    region: process.env.AWS_REGION,
+    region: process.env.MY_AWS_REGION,
     tables: {
       subscriptions: process.env.SUBSCRIPTIONS_TABLE,
     },
