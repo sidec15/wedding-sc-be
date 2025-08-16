@@ -1,5 +1,5 @@
 {
-  "name": "comment-creation",
+  "name": "comment-create",
   "version": "1.0.0",
   "description": "Lambda to create comment for a given photo",
   "main": "main.js",
