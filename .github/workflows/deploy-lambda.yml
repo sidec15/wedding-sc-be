@@ -1,4 +1,4 @@
-name: 🚀 Package & Deploy Lambda (no workspaces)
+name: 🚀 Package & Deploy Lambda
 
 defaults:
   run:
