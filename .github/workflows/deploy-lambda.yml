@@ -12,7 +12,7 @@ on:
         type: choice
         required: true
         options:
-          - comment-creation
+          - comment-create
           - comment-read
           - contact-us
           - email-dispatcher
