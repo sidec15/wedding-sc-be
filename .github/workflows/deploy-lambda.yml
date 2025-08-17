@@ -19,7 +19,6 @@ on:
           - notification-manager
           - subscription-create
           - subscription-delete
-          - subscription-read
         default: email-dispatcher
       function_name:
         description: "AWS Lambda function name"
@@ -33,7 +32,6 @@ on:
           - wedding-notification-manager
           - wedding-subscription-create
           - wedding-subscription-delete
-          - wedding-subscription-read
         default: email-dispatcher
       region:
         description: "AWS region"
