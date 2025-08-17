@@ -132,12 +132,11 @@ const listSubscriptions = async (
       TableName: conf.tables.subscriptions,
       KeyConditionExpression: "photoId = :p",
       ExpressionAttributeValues: { ":p": { S: photoId } },
-      ProjectionExpression: "commentId, photoId, email",
+      ProjectionExpression: "photoId, email",
     })
   );
 
   return (res.Items ?? []).map((item) => ({
-    commentId: item.commentId.S!,
     photoId: item.photoId.S!,
     email: item.email.S!,
   }));

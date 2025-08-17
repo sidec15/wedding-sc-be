@@ -8,7 +8,6 @@ export interface Comment {
 }
 
 export interface CommentSubscribion {
-  commentId: string;
   photoId: string;
   email: string;
 }
