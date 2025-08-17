@@ -145,24 +145,26 @@ const listSubscriptions = async (
 const getComment = async (commentId: string) => {
   const res = await ddb.send(
     new QueryCommand({
-      TableName: conf.tables.subscriptions,
-      KeyConditionExpression: "commentId = :p",
-      ExpressionAttributeValues: { ":p": { S: commentId } },
-      ProjectionExpression: "authorName, content, createdAt",
+      TableName: conf.tables.comments,
+      IndexName: "commentId-index",
+      KeyConditionExpression: "commentId = :c",
+      ExpressionAttributeValues: { ":c": { S: commentId } },
+      ProjectionExpression: "photoId, commentId, authorName, content, createdAt"
     })
   );
 
-  if (!res.Items?.length || res.Items.length == 0) return null;
+  if (!res.Items?.length) return null;
 
   const item = res.Items[0];
-  const comment = {
+  return {
     commentId: item.commentId.S!,
     photoId: item.photoId.S!,
-    email: item.email.S!,
-  } as unknown as Comment;
-
-  return comment;
+    authorName: item.authorName.S!,
+    content: item.content.S!,
+    createdAt: item.createdAt.S!
+  } as Comment;
 };
+
 
 const createPhotoCommentNotificationHtml = (
   photoId: string,
