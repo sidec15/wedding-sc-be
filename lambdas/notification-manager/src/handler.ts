@@ -2,12 +2,14 @@ import {
   Comment,
   CommentEvent,
   CommentSubscribion,
+  dateTimeUtils,
   ILogger,
   Logger,
 } from "@wedding/common";
 import { Context, SNSEvent } from "aws-lambda";
 import { DynamoDBClient, QueryCommand } from "@aws-sdk/client-dynamodb";
 import { PublishCommand, SNSClient } from "@aws-sdk/client-sns";
+import { DateTime } from "luxon";
 
 interface EmailNotificationMessage {
   type: "contact-us" | "comment-notification";
@@ -83,11 +85,13 @@ const handleCommentCreated = async (event: CommentEvent) => {
   for (const s of subscriptions) {
     const subject = "Matrimonio Chiara & Simone - Nuovo commento";
     const unsubscribeLink = `${conf.apiDomain}/photo/${photoId}/email/${s.email}`;
+    const dt = DateTime.fromISO(comment.createdAt, { zone: "utc" });
+    const createdAt = dateTimeUtils.formatItalianDateTime(dt as DateTime<true>);
     const text = createPhotoCommentNotificationText(
       photoId,
       comment.authorName,
       comment.content,
-      comment.createdAt,
+      createdAt,
       unsubscribeLink,
       s.email
     );
