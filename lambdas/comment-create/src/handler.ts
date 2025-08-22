@@ -31,7 +31,7 @@ const snsClient = new SNSClient({ region: conf.db.region });
 // ---------- Config from ENV with defaults ----------
 const AUTHOR_NAME_REGEX = conf.authorNameRegex
   ? new RegExp(conf.authorNameRegex)
-  : /^[a-zA-ZÀ-ÿ' -]+$/;
+  : /^[a-zA-ZÀ-ÿ0-9' -]+$/;
 
 const CONTENT_MAX_LENGTH = conf.contentMaxLength
   ? parseInt(conf.contentMaxLength, 10)
