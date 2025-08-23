@@ -29,6 +29,7 @@ const conf = {
   },
   apiDomain:
     process.env.API_DOMAIN || "https://matrimonio.api.chiaraesimone.it",
+  ownerEmails: (process.env.OWNER_EMAILS || "").split(","),
 };
 
 const logger: ILogger = new Logger();
@@ -68,11 +69,21 @@ const handleCommentCreated = async (event: CommentEvent) => {
   // 1) Load subscribers for the photo
   const subscriptions = await listSubscriptions(photoId);
   if (subscriptions.length === 0) {
-    logger.info(`No subscribers for photo ${photoId}. Skipping notifications.`);
-    return;
+    logger.debug(`No subscribers for photo ${photoId}.`);
   }
 
-  // 2) retrieve comment created
+  // 2) Add owner emails
+  const ownerEmails = conf.ownerEmails;
+  subscriptions.concat(
+    ownerEmails.map((e) => {
+      return {
+        email: e,
+        photoId: photoId,
+      };
+    })
+  );
+
+  // 3) retrieve comment created
   const comment = await getComment(commentId);
 
   if (!comment) {
@@ -80,11 +91,11 @@ const handleCommentCreated = async (event: CommentEvent) => {
     return;
   }
 
-  // 3) Publish one email notification per (active) subscriber
+  // 4) Publish one email notification per (active) subscriber
   let published = 0;
   for (const s of subscriptions) {
     const subject = "Matrimonio Chiara & Simone - Nuovo commento";
-    const unsubscribeLink = `${conf.apiDomain}/photo/${photoId}/email/${s.email}`;
+    const unsubscribeLink = `${conf.apiDomain}/photos/${photoId}/subscriptions/${s.email}`;
     const dt = DateTime.fromISO(comment.createdAt, { zone: "utc" });
     const createdAt = dateTimeUtils.formatItalianDateTime(dt as DateTime<true>);
     const text = createPhotoCommentNotificationText(
@@ -153,7 +164,8 @@ const getComment = async (commentId: string) => {
       IndexName: "commentId-index",
       KeyConditionExpression: "commentId = :c",
       ExpressionAttributeValues: { ":c": { S: commentId } },
-      ProjectionExpression: "photoId, commentId, authorName, content, createdAt"
+      ProjectionExpression:
+        "photoId, commentId, authorName, content, createdAt",
     })
   );
 
@@ -165,10 +177,9 @@ const getComment = async (commentId: string) => {
     photoId: item.photoId.S!,
     authorName: item.authorName.S!,
     content: item.content.S!,
-    createdAt: item.createdAt.S!
+    createdAt: item.createdAt.S!,
   } as Comment;
 };
-
 
 const createPhotoCommentNotificationHtml = (
   photoId: string,
