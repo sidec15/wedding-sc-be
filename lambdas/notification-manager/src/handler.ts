@@ -93,7 +93,7 @@ const handleCommentCreated = async (event: CommentEvent) => {
   let published = 0;
   for (const s of subscriptions) {
     const subject = "Matrimonio Chiara & Simone - Nuovo commento";
-    const unsubscribeLink = `${conf.apiDomain}/photos/${photoId}/subscriptions/${s.email}`;
+    const unsubscribeLink = `${conf.apiDomain}/photos/${photoId}/subscriptions/${encodeURIComponent(s.email)}`;
     const dt = DateTime.fromISO(comment.createdAt, { zone: "utc" });
     const createdAt = dateTimeUtils.formatItalianDateTime(dt as DateTime<true>);
     const text = createPhotoCommentNotificationText(
