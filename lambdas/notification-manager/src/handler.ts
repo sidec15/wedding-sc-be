@@ -108,7 +108,7 @@ const handleCommentCreated = async (event: CommentEvent) => {
       photoId,
       comment.authorName,
       comment.content,
-      comment.createdAt,
+      createdAt,
       unsubscribeLink,
       s.email
     );
