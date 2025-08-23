@@ -97,20 +97,16 @@ const handleCommentCreated = async (event: CommentEvent) => {
     const dt = DateTime.fromISO(comment.createdAt, { zone: "utc" });
     const createdAt = dateTimeUtils.formatItalianDateTime(dt as DateTime<true>);
     const text = createPhotoCommentNotificationText(
-      photoId,
       comment.authorName,
       comment.content,
       createdAt,
       unsubscribeLink,
-      s.email
     );
     const html = createPhotoCommentNotificationHtml(
-      photoId,
       comment.authorName,
       comment.content,
       createdAt,
       unsubscribeLink,
-      s.email
     );
     const message: EmailNotificationMessage = {
       type: "comment-notification",
@@ -180,16 +176,11 @@ const getComment = async (commentId: string) => {
 };
 
 const createPhotoCommentNotificationHtml = (
-  photoId: string,
   authorName: string,
   content: string,
   createdAt: string,
-  unsubscribeBaseUrl: string,
-  subscriberEmail: string
+  unsubscribeLink: string,
 ) => {
-  const unsubscribeLink = `${unsubscribeBaseUrl}/photos/${photoId}/subscriptions/${encodeURIComponent(
-    subscriberEmail
-  )}`;
 
   return `
   <div style="font-family: 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #555; max-width: 600px; margin: 0 auto;">
@@ -229,16 +220,11 @@ const createPhotoCommentNotificationHtml = (
 };
 
 const createPhotoCommentNotificationText = (
-  photoId: string,
   authorName: string,
   content: string,
   createdAt: string,
-  unsubscribeBaseUrl: string,
-  subscriberEmail: string
+  unsubscribeLink: string,
 ) => {
-  const unsubscribeLink = `${unsubscribeBaseUrl}/photos/${photoId}/subscriptions/${encodeURIComponent(
-    subscriberEmail
-  )}`;
 
   return `
 Ciao,
