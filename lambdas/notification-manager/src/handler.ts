@@ -94,6 +94,7 @@ const handleCommentCreated = async (event: CommentEvent) => {
   for (const s of subscriptions) {
     const subject = "Matrimonio Chiara & Simone - Nuovo commento";
     const unsubscribeLink = `${conf.apiDomain}/photos/${photoId}/subscriptions/${encodeURIComponent(s.email)}`;
+    const photoLink = `${conf.apiDomain}/our-story?${encodeURIComponent(s.photoId)}`;
     const dt = DateTime.fromISO(comment.createdAt, { zone: "utc" });
     const createdAt = dateTimeUtils.formatItalianDateTime(dt as DateTime<true>);
     const text = createPhotoCommentNotificationText(
@@ -101,12 +102,14 @@ const handleCommentCreated = async (event: CommentEvent) => {
       comment.content,
       createdAt,
       unsubscribeLink,
+      photoLink
     );
     const html = createPhotoCommentNotificationHtml(
       comment.authorName,
       comment.content,
       createdAt,
       unsubscribeLink,
+      photoLink
     );
     const message: EmailNotificationMessage = {
       type: "comment-notification",
@@ -180,8 +183,8 @@ const createPhotoCommentNotificationHtml = (
   content: string,
   createdAt: string,
   unsubscribeLink: string,
+  photoLink: string
 ) => {
-
   return `
   <div style="font-family: 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #555; max-width: 600px; margin: 0 auto;">
     <div style="background-color: #fdf2f5; padding: 20px; border-radius: 8px; border: 1px solid #f5d6e0;">
@@ -208,6 +211,12 @@ const createPhotoCommentNotificationHtml = (
             <td style="border-bottom: 1px dashed #f0c8d2;">${createdAt}</td>
           </tr>
         </table>
+
+        <div style="text-align: center; margin-top: 25px;">
+          <a href="${photoLink}" style="background-color: #d67a8a; color: #fff; padding: 12px 20px; border-radius: 5px; text-decoration: none; font-weight: bold; display: inline-block;">
+            🔗 Vai alla foto
+          </a>
+        </div>
       </div>
       
       <p style="text-align: center; margin-top: 25px; font-size: 13px; color: #999;">
@@ -224,8 +233,8 @@ const createPhotoCommentNotificationText = (
   content: string,
   createdAt: string,
   unsubscribeLink: string,
+  photoLink: string
 ) => {
-
   return `
 Ciao,
 
@@ -235,6 +244,8 @@ Autore: ${authorName}
 Commento:
 ${content}
 Data: ${createdAt}
+
+Puoi vedere la foto qui: ${photoLink}
 
 Ricevi questa email perché ti sei iscritto per ricevere notifiche sui nuovi commenti di questa foto.
 Se non vuoi più riceverle, puoi disiscriverti qui: ${unsubscribeLink}
