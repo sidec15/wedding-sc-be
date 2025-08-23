@@ -74,13 +74,11 @@ const handleCommentCreated = async (event: CommentEvent) => {
 
   // 2) Add owner emails
   const ownerEmails = conf.ownerEmails;
-  subscriptions.concat(
-    ownerEmails.map((e) => {
-      return {
-        email: e,
-        photoId: photoId,
-      };
-    })
+  subscriptions.push(
+    ...ownerEmails.map((e) => ({
+      email: e,
+      photoId,
+    }))
   );
 
   // 3) retrieve comment created
