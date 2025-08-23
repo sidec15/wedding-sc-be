@@ -47,14 +47,17 @@ const deleteSubscription = async (photoId: string, email: string) => {
   );
 };
 
-const redirect = (location: string) => ({
-  statusCode: 302,
-  headers: {
-    Location: location,
-    "Cache-Control": "no-store",
-  },
-  body: "",
-});
+const redirect = (location: string) => {
+  const separator = location.includes("?") ? "&" : "?";
+  return {
+    statusCode: 302,
+    headers: {
+      Location: `${location}${separator}skipSplash=true`,
+      "Cache-Control": "no-store",
+    },
+    body: "",
+  };
+};
 
 // -------- Handler --------
 export const handler: APIGatewayProxyHandlerV2 = async (event) => {
@@ -69,9 +72,15 @@ export const handler: APIGatewayProxyHandlerV2 = async (event) => {
     const req = parseAndValidateRequest(event);
     if (!req) {
       if (method === "GET") {
-        return redirect(`${conf.publicSite}/unsubscribe?status=error&code=validation_failed`);
+        return redirect(
+          `${conf.publicSite}/unsubscribe?status=error&code=validation_failed`
+        );
       }
-      return webUtils.failure(400, "validation_failed", "Invalid or missing input");
+      return webUtils.failure(
+        400,
+        "validation_failed",
+        "Invalid or missing input"
+      );
     }
 
     const { photoId, email } = req;
@@ -79,7 +88,9 @@ export const handler: APIGatewayProxyHandlerV2 = async (event) => {
 
     if (method === "GET") {
       return redirect(
-        `${conf.publicSite}/unsubscribe?status=ok&photo=${encodeURIComponent(photoId)}&email=${encodeURIComponent(email)}`
+        `${conf.publicSite}/unsubscribe?status=ok&photo=${encodeURIComponent(
+          photoId
+        )}&email=${encodeURIComponent(email)}`
       );
     }
 
@@ -93,9 +104,15 @@ export const handler: APIGatewayProxyHandlerV2 = async (event) => {
     logger.error("Error unsubscribing", err);
 
     if (method === "GET") {
-      return redirect(`${conf.publicSite}/unsubscribe?status=error&code=internal_service_error`);
+      return redirect(
+        `${conf.publicSite}/unsubscribe?status=error&code=internal_service_error`
+      );
     }
 
-    return webUtils.failure(500, "internal_service_error", "An unexpected error occurred");
+    return webUtils.failure(
+      500,
+      "internal_service_error",
+      "An unexpected error occurred"
+    );
   }
 };
