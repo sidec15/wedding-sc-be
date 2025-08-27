@@ -6,9 +6,9 @@ import { LambdaClient, InvokeCommand } from "@aws-sdk/client-lambda";
 
 const conf = {
   region: process.env.AWS_REGION ?? "eu-west-1",
-  use_recaptcha: process.env.USE_RECAPTCHA === "true",
   emailSnsTopicArn: process.env.EMAIL_SNS_TOPIC_ARN,
   toEmail: process.env.TO_EMAIL,
+  use_recaptcha: process.env.USE_RECAPTCHA === "true",
   validatorFunctionName: process.env.CAPTCHA_VALIDATOR_FUNCTION_NAME
 };
 
@@ -100,7 +100,6 @@ export const handler: APIGatewayProxyHandler = async (event) => {
   }
 };
 
-// keep your handler the same, only swap the validation call:
 const validateRecaptcha = async (token: string): Promise<boolean> => {
   const fn = conf.validatorFunctionName;
   if (!fn) throw new Error("Missing CAPTCHA_VALIDATOR_FUNCTION_NAME");
