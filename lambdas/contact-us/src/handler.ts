@@ -1,7 +1,18 @@
 import { APIGatewayProxyHandler } from "aws-lambda";
 import { SNSClient, PublishCommand } from "@aws-sdk/client-sns";
-import axios from "axios";
 import { dateTimeUtils, EmailNotificationMessage, ILogger, Logger } from "@wedding/common";
+import { LambdaClient, InvokeCommand } from "@aws-sdk/client-lambda";
+
+
+const conf = {
+  region: process.env.AWS_REGION ?? "eu-west-1",
+  use_recaptcha: process.env.USE_RECAPTCHA === "true",
+  emailSnsTopicArn: process.env.EMAIL_SNS_TOPIC_ARN,
+  toEmail: process.env.TO_EMAIL,
+  validatorFunctionName: process.env.CAPTCHA_VALIDATOR_FUNCTION_NAME
+};
+
+const lambdaClient = new LambdaClient({ region: conf.region });
 
 interface ContactFormData {
   name: string;
@@ -12,7 +23,7 @@ interface ContactFormData {
   recaptchaToken?: string;
 }
 
-const snsClient = new SNSClient({ region: process.env.AWS_REGION });
+const snsClient = new SNSClient({ region: conf.region });
 
 const logger: ILogger = new Logger();
 
@@ -33,7 +44,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       logger.debug(`Parsed body: ${JSON.stringify(body)}`);
     }
 
-    const useRecaptcha = process.env.USE_RECAPTCHA === "true";
+    const useRecaptcha = conf.use_recaptcha;
 
     if (useRecaptcha) {
       if (!body.recaptchaToken) {
@@ -46,7 +57,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       }
     }
 
-    const topicArn = process.env.EMAIL_SNS_TOPIC_ARN;
+    const topicArn = conf.emailSnsTopicArn;
     if (!topicArn) {
       throw new Error(
         `Required environment variable EMAIL_SNS_TOPIC_ARN not set`
@@ -58,7 +69,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       TopicArn: topicArn,
       Message: JSON.stringify({
         type: "contact-us",
-        to: process.env.TO_EMAIL?.split(",").map((e) => e.trim()) || [],
+        to: conf.toEmail?.split(",").map((e) => e.trim()) || [],
         subject: `Wedding Contact Form - New message from ${body.name}`,
         text: createTextMessage(body),
         html: createHtmlMessage(body),
@@ -79,7 +90,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     await snsClient.send(publishCommand);
 
     logger.info(
-      `Correctly published event on topic: ${process.env.EMAIL_SNS_TOPIC_ARN}`
+      `Correctly published event on topic: ${conf.emailSnsTopicArn}`
     );
 
     return createResponse(200, { message: "Message sent successfully!" });
@@ -89,16 +100,26 @@ export const handler: APIGatewayProxyHandler = async (event) => {
   }
 };
 
+// keep your handler the same, only swap the validation call:
 const validateRecaptcha = async (token: string): Promise<boolean> => {
-  const secret = process.env.RECAPTCHA_SECRET_KEY;
-  const response = await axios.post(
-    `https://www.google.com/recaptcha/api/siteverify`,
-    new URLSearchParams({
-      secret: secret || "",
-      response: token,
+  const fn = conf.validatorFunctionName;
+  if (!fn) throw new Error("Missing CAPTCHA_VALIDATOR_FUNCTION_NAME");
+
+  const payload = { body: JSON.stringify({ token }) };
+
+  const out = await lambdaClient.send(
+    new InvokeCommand({
+      FunctionName: fn,
+      InvocationType: "RequestResponse",
+      Payload: Buffer.from(JSON.stringify(payload)),
     })
   );
-  return response.data.success;
+
+  // Minimal parsing: expect { statusCode, body: '{"success":true|false}' }
+  const text = new TextDecoder().decode(out.Payload ?? new Uint8Array());
+  const res = JSON.parse(text);
+  const body = res?.body ? JSON.parse(res.body) : {};
+  return !!body.success;
 };
 
 const validateBody = (body: any) => {

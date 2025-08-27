@@ -22,14 +22,14 @@
   },
   "homepage": "https://github.com/sidec15/wedding-sc-be#readme",
   "devDependencies": {
+    "@aws-sdk/client-lambda": "^3.876.0",
     "@types/aws-lambda": "^8.10.152",
     "@types/node": "^24.2.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.2"
   },
   "dependencies": {
-    "@wedding/common": "file:../../common",
     "@aws-sdk/client-sns": "^3.863.0",
-    "axios": "^1.11.0"
+    "@wedding/common": "file:../../common"
   }
 }

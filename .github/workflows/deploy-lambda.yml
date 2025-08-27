@@ -19,6 +19,7 @@ on:
           - notification-manager
           - subscription-create
           - subscription-delete
+          - captcha-validator
         default: email-dispatcher
       function_name:
         description: "AWS Lambda function name"
@@ -32,6 +33,7 @@ on:
           - wedding-notification-manager
           - wedding-subscription-create
           - wedding-subscription-delete
+          - captcha-validator
         default: email-dispatcher
       region:
         description: "AWS region"

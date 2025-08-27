@@ -1,0 +1,35 @@
+{
+  "name": "captcha-validator",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sidec15/wedding-sc-be.git"
+  },
+  "author": "sidec15",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/sidec15/wedding-sc-be/issues"
+  },
+  "homepage": "https://github.com/sidec15/wedding-sc-be#readme",
+  "description": "",
+  "scripts": {
+    "build": "tsc",
+    "build:prod": "npm run build && npm prune --production",
+    "dev": "ts-node src/main.ts",
+    "start": "node dist/main.js",
+    "zip": "zip -r lambda.zip dist/handler.js node_modules package.json",
+    "clean:all": "rimraf ./dist && rimraf .nyc_output && rimraf .yalc && rimraf yalc.lock && rimraf node_modules"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.152",
+    "@types/node": "^24.2.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.2"
+  },
+  "dependencies": {
+    "@wedding/common": "file:../../common",
+    "@aws-sdk/client-sns": "^3.863.0",
+    "axios": "^1.11.0"
+  }
+}
