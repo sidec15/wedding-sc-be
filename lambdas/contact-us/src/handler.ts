@@ -5,7 +5,7 @@ import { LambdaClient, InvokeCommand } from "@aws-sdk/client-lambda";
 
 
 const conf = {
-  region: process.env.AWS_REGION ?? "eu-west-1",
+  region: process.env.MY_AWS_REGION ?? "eu-west-1",
   emailSnsTopicArn: process.env.EMAIL_SNS_TOPIC_ARN,
   toEmail: process.env.TO_EMAIL,
   use_recaptcha: process.env.USE_RECAPTCHA === "true",

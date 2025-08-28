@@ -3,7 +3,7 @@ import axios from "axios";
 import { ILogger, Logger } from "@wedding/common";
 
 const conf = {
-  region: process.env.AWS_REGION ?? "eu-west-1",
+  region: process.env.MY_AWS_REGION ?? "eu-west-1",
   recaptcha_secret_key: process.env.RECAPTCHA_SECRET_KEY,
 };
 
