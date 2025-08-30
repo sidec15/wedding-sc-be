@@ -228,7 +228,7 @@ const publishSnsEvent = async (e: CommentEvent) => {
 };
 
 // ---------- Lambda Handler ----------
-export const handler: APIGatewayProxyHandlerV2 = async (event) => {
+export const handler: APIGatewayProxyHandlerV2 = async (event, context) => {
   logger.info("Received request to create comment", {
     pathParameters: event.pathParameters,
     requestId: event.requestContext?.requestId,
@@ -241,7 +241,9 @@ export const handler: APIGatewayProxyHandlerV2 = async (event) => {
       return webUtils.failure(
         400,
         "validation_failed",
-        "Invalid or missing input"
+        "Invalid or missing input",
+        context.awsRequestId,
+        event.requestContext.requestId
       );
     }
 
@@ -252,7 +254,9 @@ export const handler: APIGatewayProxyHandlerV2 = async (event) => {
         return webUtils.failure(
           400,
           "missing_recaptcha_token",
-          "Missing reCAPTCHA token"
+          "Missing reCAPTCHA token",
+          context.awsRequestId,
+          event.requestContext.requestId
         );
       }
 
@@ -263,7 +267,9 @@ export const handler: APIGatewayProxyHandlerV2 = async (event) => {
         return webUtils.failure(
           403,
           "captcha_failed",
-          "Failed reCAPTCHA validation"
+          "Failed reCAPTCHA validation",
+          context.awsRequestId,
+          event.requestContext.requestId
         );
       }
       logger.info("reCAPTCHA validation passed");
@@ -277,7 +283,12 @@ export const handler: APIGatewayProxyHandlerV2 = async (event) => {
       commentId: comment.commentId,
     });
 
-    const result = webUtils.success(201, comment);
+    const result = webUtils.success(
+      201,
+      comment,
+      context.awsRequestId,
+      event.requestContext.requestId
+    );
 
     await publishSnsEvent({
       type: "comment-created",
@@ -291,7 +302,9 @@ export const handler: APIGatewayProxyHandlerV2 = async (event) => {
     return webUtils.failure(
       500,
       "internal_service_error",
-      "An unexpected error occurred"
+      "An unexpected error occurred",
+      context.awsRequestId,
+      event.requestContext.requestId
     );
   }
 };

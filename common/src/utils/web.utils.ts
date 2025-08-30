@@ -1,8 +1,17 @@
 // ---------- Response Helpers ----------
-export function success(statusCode: number, body: any) {
+export function success(
+  statusCode: number,
+  body: any,
+  lambdaRequestId: string,
+  apiGwRequestId: string
+) {
   return {
     statusCode,
-    headers: { "content-type": "application/json" },
+    headers: {
+      "content-type": "application/json",
+      "x-lambda-request-id": lambdaRequestId,
+      "x-apigw-request-id": apiGwRequestId,
+    },
     body: JSON.stringify(body),
   };
 }
@@ -10,9 +19,16 @@ export function success(statusCode: number, body: any) {
 export function failure(
   statusCode: number,
   errorCode: string,
-  message: string
+  message: string,
+  lambdaRequestId: string,
+  apiGwRequestId: string
 ) {
-  return success(statusCode, { errorCode, message });
+  return success(
+    statusCode,
+    { errorCode, message },
+    lambdaRequestId,
+    apiGwRequestId
+  );
 }
 
 /**
