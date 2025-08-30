@@ -1,4 +1,4 @@
-import { APIGatewayProxyHandlerV2 } from "aws-lambda";
+import { APIGatewayProxyEventV2, APIGatewayProxyHandlerV2, Context } from "aws-lambda";
 import { DynamoDBClient, PutItemCommand } from "@aws-sdk/client-dynamodb";
 import { PublishCommand, SNSClient } from "@aws-sdk/client-sns";
 import { LambdaClient, InvokeCommand } from "@aws-sdk/client-lambda";
@@ -228,7 +228,10 @@ const publishSnsEvent = async (e: CommentEvent) => {
 };
 
 // ---------- Lambda Handler ----------
-export const handler: APIGatewayProxyHandlerV2 = async (event, context) => {
+export const handler: APIGatewayProxyHandlerV2 = async (
+  event: APIGatewayProxyEventV2,
+  context: Context
+) => {
   logger.info("Received request to create comment", {
     pathParameters: event.pathParameters,
     requestId: event.requestContext?.requestId,

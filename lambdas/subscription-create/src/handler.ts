@@ -1,4 +1,8 @@
-import { APIGatewayProxyHandlerV2 } from "aws-lambda";
+import {
+  APIGatewayProxyEventV2,
+  APIGatewayProxyHandlerV2,
+  Context,
+} from "aws-lambda";
 import { DynamoDBClient, PutItemCommand } from "@aws-sdk/client-dynamodb";
 import { LambdaClient, InvokeCommand } from "@aws-sdk/client-lambda";
 import { ILogger, Logger } from "@wedding/common";
@@ -27,7 +31,9 @@ interface CreateSubscriptionRequest {
   recaptchaToken?: string;
 }
 
-const parseAndValidateRequest = (event: any): CreateSubscriptionRequest | null => {
+const parseAndValidateRequest = (
+  event: any
+): CreateSubscriptionRequest | null => {
   logger.debug("Parsing and validating request");
 
   const photoId = event.pathParameters?.photoId;
@@ -52,7 +58,9 @@ const parseAndValidateRequest = (event: any): CreateSubscriptionRequest | null =
 
   const email = webUtils.validateEmail(body.email);
   if (!email) {
-    logger.error("Validation failed: Invalid email format", { email: body.email });
+    logger.error("Validation failed: Invalid email format", {
+      email: body.email,
+    });
     return null;
   }
 
@@ -80,11 +88,15 @@ const validateRecaptcha = async (token: string): Promise<boolean> => {
   );
 
   if (out.FunctionError) {
-    logger.error(`Captcha validator returned FunctionError: ${out.FunctionError}`);
+    logger.error(
+      `Captcha validator returned FunctionError: ${out.FunctionError}`
+    );
     return false;
   }
 
-  const text = out.Payload ? new TextDecoder().decode(out.Payload as Uint8Array) : "";
+  const text = out.Payload
+    ? new TextDecoder().decode(out.Payload as Uint8Array)
+    : "";
   const res = text ? JSON.parse(text) : {};
   const body = res?.body ? JSON.parse(res.body) : {};
 
@@ -95,7 +107,9 @@ const validateRecaptcha = async (token: string): Promise<boolean> => {
   return !!body.success;
 };
 
-const putSubscription = async (req: CreateSubscriptionRequest): Promise<void> => {
+const putSubscription = async (
+  req: CreateSubscriptionRequest
+): Promise<void> => {
   logger.info("Storing subscription in DynamoDB", {
     table: SUBSCRIPTIONS_TABLE,
     photoId: req.photoId,
@@ -118,7 +132,10 @@ const putSubscription = async (req: CreateSubscriptionRequest): Promise<void> =>
 };
 
 // ---------- Lambda Handler ----------
-export const handler: APIGatewayProxyHandlerV2 = async (event) => {
+export const handler: APIGatewayProxyHandlerV2 = async (
+  event: APIGatewayProxyEventV2,
+  context: Context
+) => {
   logger.info("Received request to create subscription", {
     pathParameters: event.pathParameters,
     requestId: event.requestContext?.requestId,
@@ -127,22 +144,42 @@ export const handler: APIGatewayProxyHandlerV2 = async (event) => {
   try {
     const req = parseAndValidateRequest(event);
     if (!req) {
-      logger.error("Request validation failed — aborting subscription creation");
-      return webUtils.failure(400, "validation_failed", "Invalid or missing input");
+      logger.error(
+        "Request validation failed — aborting subscription creation"
+      );
+      return webUtils.failure(
+        400,
+        "validation_failed",
+        "Invalid or missing input",
+        context.awsRequestId,
+        event.requestContext.requestId
+      );
     }
 
     // --- reCAPTCHA (simple boolean contract) ---
     if (conf.use_recaptcha) {
       if (!req.recaptchaToken) {
         logger.warn("Missing reCAPTCHA token");
-        return webUtils.failure(400, "missing_recaptcha_token", "Missing reCAPTCHA token");
+        return webUtils.failure(
+          400,
+          "missing_recaptcha_token",
+          "Missing reCAPTCHA token",
+          context.awsRequestId,
+          event.requestContext.requestId
+        );
       }
 
       logger.info("Validating reCAPTCHA token via captcha-validator lambda");
       const isHuman = await validateRecaptcha(req.recaptchaToken);
       if (!isHuman) {
         logger.warn("Failed reCAPTCHA validation");
-        return webUtils.failure(403, "captcha_failed", "Failed reCAPTCHA validation");
+        return webUtils.failure(
+          403,
+          "captcha_failed",
+          "Failed reCAPTCHA validation",
+          context.awsRequestId,
+          event.requestContext.requestId
+        );
       }
       logger.info("reCAPTCHA validation passed");
     }
@@ -151,9 +188,20 @@ export const handler: APIGatewayProxyHandlerV2 = async (event) => {
     await putSubscription(req);
 
     logger.info("Subscription creation completed successfully");
-    return webUtils.success(201, {});
+    return webUtils.success(
+      201,
+      {},
+      context.awsRequestId,
+      event.requestContext.requestId
+    );
   } catch (err) {
     logger.error("Error creating subscription", err);
-    return webUtils.failure(500, "internal_service_error", "An unexpected error occurred");
+    return webUtils.failure(
+      500,
+      "internal_service_error",
+      "An unexpected error occurred",
+      context.awsRequestId,
+      event.requestContext.requestId
+    );
   }
 };

@@ -1,7 +1,14 @@
-import { APIGatewayProxyHandlerV2 } from "aws-lambda";
+import { APIGatewayProxyEventV2, APIGatewayProxyHandlerV2, Context } from "aws-lambda";
 import { DynamoDBClient, QueryCommand } from "@aws-sdk/client-dynamodb";
 import { unmarshall } from "@aws-sdk/util-dynamodb";
-import { Comment, dbUtils, webUtils, ILogger, Logger, PaginatedResult } from "@wedding/common";
+import {
+  Comment,
+  dbUtils,
+  webUtils,
+  ILogger,
+  Logger,
+  PaginatedResult,
+} from "@wedding/common";
 
 const conf = {
   db: {
@@ -104,7 +111,10 @@ const countAll = async (
 };
 
 // ---------- Handler ----------
-export const handler: APIGatewayProxyHandlerV2 = async (event) => {
+export const handler: APIGatewayProxyHandlerV2 = async (
+  event: APIGatewayProxyEventV2,
+  context: Context
+) => {
   logger.info("Received request to list comments", {
     pathParameters: event.pathParameters,
     queryStringParameters: event.queryStringParameters,
@@ -118,7 +128,9 @@ export const handler: APIGatewayProxyHandlerV2 = async (event) => {
       return webUtils.failure(
         400,
         "validation_failed",
-        "Invalid or missing input"
+        "Invalid or missing input",
+        context.awsRequestId,
+        event.requestContext.requestId
       );
     }
 
@@ -165,13 +177,20 @@ export const handler: APIGatewayProxyHandlerV2 = async (event) => {
       returnedCursor: !!nextCursor,
     });
 
-    return webUtils.success(200, response);
+    return webUtils.success(
+      200,
+      response,
+      context.awsRequestId,
+      event.requestContext.requestId
+    );
   } catch (err) {
     logger.error("Error listing comments", err);
     return webUtils.failure(
       500,
       "internal_service_error",
-      "An unexpected error occurred"
+      "An unexpected error occurred",
+      context.awsRequestId,
+      event.requestContext.requestId
     );
   }
 };

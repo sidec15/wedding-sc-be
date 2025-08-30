@@ -1,5 +1,9 @@
 // lambdas/subscriptions-delete/src/handler.ts
-import { APIGatewayProxyHandlerV2 } from "aws-lambda";
+import {
+  APIGatewayProxyEventV2,
+  APIGatewayProxyHandlerV2,
+  Context,
+} from "aws-lambda";
 import { DynamoDBClient, DeleteItemCommand } from "@aws-sdk/client-dynamodb";
 import { ILogger, Logger, webUtils } from "@wedding/common";
 
@@ -60,7 +64,10 @@ const redirect = (location: string) => {
 };
 
 // -------- Handler --------
-export const handler: APIGatewayProxyHandlerV2 = async (event) => {
+export const handler: APIGatewayProxyHandlerV2 = async (
+  event: APIGatewayProxyEventV2,
+  context: Context
+) => {
   const method = event.requestContext?.http?.method ?? "GET";
   logger.info("Received unsubscribe request", {
     method,
@@ -79,7 +86,9 @@ export const handler: APIGatewayProxyHandlerV2 = async (event) => {
       return webUtils.failure(
         400,
         "validation_failed",
-        "Invalid or missing input"
+        "Invalid or missing input",
+        context.awsRequestId,
+        event.requestContext.requestId
       );
     }
 
@@ -95,11 +104,16 @@ export const handler: APIGatewayProxyHandlerV2 = async (event) => {
     }
 
     // DELETE flow → JSON response
-    return webUtils.success(200, {
-      photoId,
-      email,
-      unsubscribed: true,
-    });
+    return webUtils.success(
+      200,
+      {
+        photoId,
+        email,
+        unsubscribed: true,
+      },
+      context.awsRequestId,
+      event.requestContext.requestId
+    );
   } catch (err) {
     logger.error("Error unsubscribing", err);
 
@@ -112,7 +126,9 @@ export const handler: APIGatewayProxyHandlerV2 = async (event) => {
     return webUtils.failure(
       500,
       "internal_service_error",
-      "An unexpected error occurred"
+      "An unexpected error occurred",
+      context.awsRequestId,
+      event.requestContext.requestId
     );
   }
 };

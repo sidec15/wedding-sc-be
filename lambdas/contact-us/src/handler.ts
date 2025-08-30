@@ -1,15 +1,26 @@
-import { APIGatewayProxyHandler } from "aws-lambda";
+import {
+  APIGatewayProxyEvent,
+  APIGatewayProxyEventV2,
+  APIGatewayProxyHandler,
+  APIGatewayProxyHandlerV2,
+} from "aws-lambda";
 import { SNSClient, PublishCommand } from "@aws-sdk/client-sns";
-import { dateTimeUtils, EmailNotificationMessage, ILogger, Logger } from "@wedding/common";
+import {
+  dateTimeUtils,
+  EmailNotificationMessage,
+  ILogger,
+  Logger,
+  webUtils,
+} from "@wedding/common";
 import { LambdaClient, InvokeCommand } from "@aws-sdk/client-lambda";
-
+import { Context } from "vm";
 
 const conf = {
   region: process.env.MY_AWS_REGION ?? "eu-west-1",
   emailSnsTopicArn: process.env.EMAIL_SNS_TOPIC_ARN,
   toEmail: process.env.TO_EMAIL,
   use_recaptcha: process.env.USE_RECAPTCHA === "true",
-  validatorFunctionName: process.env.CAPTCHA_VALIDATOR_FUNCTION_NAME
+  validatorFunctionName: process.env.CAPTCHA_VALIDATOR_FUNCTION_NAME,
 };
 
 const lambdaClient = new LambdaClient({ region: conf.region });
@@ -27,14 +38,17 @@ const snsClient = new SNSClient({ region: conf.region });
 
 const logger: ILogger = new Logger();
 
-export const handler: APIGatewayProxyHandler = async (event) => {
+export const handler: APIGatewayProxyHandlerV2 = async (
+  event: APIGatewayProxyEventV2,
+  context: Context
+) => {
   try {
     if (logger.isDebugEnabled()) {
       logger.debug(`Raw event arrived: ${JSON.stringify(event)}`);
     }
     const parsed = JSON.parse(event.body || "{}");
 
-    const result = validateBody(parsed);
+    const result = validateBody(parsed, event, context);
     if (result) {
       return result;
     }
@@ -48,12 +62,24 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     if (useRecaptcha) {
       if (!body.recaptchaToken) {
-        return createResponse(400, { error: "Missing reCAPTCHA token" });
+        return webUtils.failure(
+          400,
+          "bad_captcha",
+          "Missing reCAPTCHA token",
+          context.awsRequestId,
+          event.requestContext.requestId
+        );
       }
 
       const isHuman = await validateRecaptcha(body.recaptchaToken);
       if (!isHuman) {
-        return createResponse(403, { error: "Failed reCAPTCHA validation" });
+        return webUtils.failure(
+          403,
+          "bad_captcha",
+          "Failed reCAPTCHA validation",
+          context.awsRequestId,
+          event.requestContext.requestId
+        );
       }
     }
 
@@ -89,14 +115,23 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     await snsClient.send(publishCommand);
 
-    logger.info(
-      `Correctly published event on topic: ${conf.emailSnsTopicArn}`
-    );
+    logger.info(`Correctly published event on topic: ${conf.emailSnsTopicArn}`);
 
-    return createResponse(200, { message: "Message sent successfully!" });
+    return webUtils.success(
+      200,
+      "Message sent successfully!",
+      context.awsRequestId,
+      event.requestContext.requestId
+    );
   } catch (error) {
     logger.error("SNS publish error:", error);
-    return createResponse(500, { error: "Failed to send message" });
+    return webUtils.failure(
+      500,
+      "internal_service_error",
+      "Failed to send message",
+      context.awsRequestId,
+      event.requestContext.requestId
+    );
   }
 };
 
@@ -121,43 +156,63 @@ const validateRecaptcha = async (token: string): Promise<boolean> => {
   return !!body.success;
 };
 
-const validateBody = (body: any) => {
+const validateBody = (
+  body: any,
+  event: APIGatewayProxyEventV2,
+  context: Context
+) => {
   if (!body) {
-    return createResponse(400, { error: "Missing body." });
+    return webUtils.failure(
+      400,
+      "validation_failed",
+      "Missing body.",
+      context.awsRequestId,
+      event.requestContext.requestId
+    );
   }
 
   if (!body.name) {
-    return createResponse(400, { error: "Missing name." });
+    return webUtils.failure(
+      400,
+      "validation_failed",
+      "Missing name.",
+      context.awsRequestId,
+      event.requestContext.requestId
+    );
   }
 
   if (!body.surname) {
-    return createResponse(400, { error: "Missing surname." });
+    return webUtils.failure(
+      400,
+      "validation_failed",
+      "Missing surname.",
+      context.awsRequestId,
+      event.requestContext.requestId
+    );
   }
 
   if (!body.message) {
-    return createResponse(400, { error: "Missing message." });
+    return webUtils.failure(
+      400,
+      "validation_failed",
+      "Missing message.",
+      context.awsRequestId,
+      event.requestContext.requestId
+    );
   }
 
   // At least one contact method should be provided
   if (!body.email && !body.phone) {
-    return createResponse(400, {
-      error: "Please provide either email or phone number.",
-    });
+    return webUtils.failure(
+      400,
+      "validation_failed",
+      "Please provide either email or phone number.",
+      context.awsRequestId,
+      event.requestContext.requestId
+    );
   }
 
   return null;
-};
-
-const createResponse = (statusCode: number, body: any) => {
-  return {
-    statusCode,
-    headers: {
-      "Content-Type": "application/json",
-      "Access-Control-Allow-Origin": "*", // Adjust this based on your CORS requirements
-      "Access-Control-Allow-Credentials": true,
-    },
-    body: JSON.stringify(body),
-  };
 };
 
 const createHtmlMessage = (body: ContactFormData) => {
