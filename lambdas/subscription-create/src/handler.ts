@@ -4,8 +4,8 @@ import {
   Context,
 } from "aws-lambda";
 import { DynamoDBClient, PutItemCommand } from "@aws-sdk/client-dynamodb";
-import { LambdaClient, InvokeCommand } from "@aws-sdk/client-lambda";
-import { ILogger, Logger } from "@wedding/common";
+import { LambdaClient } from "@aws-sdk/client-lambda";
+import { ILogger, Logger, validateRecaptcha } from "@wedding/common";
 import * as webUtils from "@wedding/common/dist/utils/web.utils";
 
 const conf = {
@@ -66,45 +66,6 @@ const parseAndValidateRequest = (
 
   logger.info("Request validated successfully", { photoId, email });
   return { email, photoId, recaptchaToken: body.recaptchaToken };
-};
-
-// minimal invoker: expects { success: boolean } from captcha-validator
-const validateRecaptcha = async (token: string): Promise<boolean> => {
-  const fn = conf.validatorFunctionName;
-  if (!fn) throw new Error("Missing CAPTCHA_VALIDATOR_FUNCTION_NAME");
-
-  if (logger.isDebugEnabled()) {
-    logger.debug(`Invoking captcha validator lambda: ${fn}`);
-  }
-
-  const payload = { body: JSON.stringify({ token }) };
-
-  const out = await lambdaClient.send(
-    new InvokeCommand({
-      FunctionName: fn,
-      InvocationType: "RequestResponse",
-      Payload: Buffer.from(JSON.stringify(payload)),
-    })
-  );
-
-  if (out.FunctionError) {
-    logger.error(
-      `Captcha validator returned FunctionError: ${out.FunctionError}`
-    );
-    return false;
-  }
-
-  const text = out.Payload
-    ? new TextDecoder().decode(out.Payload as Uint8Array)
-    : "";
-  const res = text ? JSON.parse(text) : {};
-  const body = res?.body ? JSON.parse(res.body) : {};
-
-  if (logger.isDebugEnabled()) {
-    logger.debug(`Captcha validator response: ${JSON.stringify(res)}`);
-  }
-
-  return !!body.success;
 };
 
 const putSubscription = async (
@@ -170,17 +131,41 @@ export const handler: APIGatewayProxyHandlerV2 = async (
       }
 
       logger.info("Validating reCAPTCHA token via captcha-validator lambda");
-      const isHuman = await validateRecaptcha(req.recaptchaToken);
-      if (!isHuman) {
-        logger.warn("Failed reCAPTCHA validation");
+      const result = await validateRecaptcha(
+        req.recaptchaToken as string,
+        conf.validatorFunctionName as string,
+        logger,
+        lambdaClient
+      );
+
+      if (!result.isHuman) {
+        // Expired/invalid token: tell client to solve captcha again + clear cached token client-side
+        if (result.statusCode === 400) {
+          logger.warn(`Failed reCAPTCHA validation (reason=${result.reason})`);
+          return webUtils.failure(
+            403, // or 400; many APIs prefer 403 "forbidden by policy"
+            "captcha_failed",
+            result.reason === "expired"
+              ? "Captcha expired, please try again."
+              : "Invalid captcha, please try again.",
+            context.awsRequestId,
+            event.requestContext.requestId
+          );
+        }
+
+        // Transient/server error: do NOT blame the user; allow retry later
+        logger.error(
+          `Captcha verification unavailable (reason=${result.reason})`
+        );
         return webUtils.failure(
-          403,
-          "captcha_failed",
-          "Failed reCAPTCHA validation",
+          503,
+          "captcha_unavailable",
+          "Captcha verification service is temporarily unavailable. Please try again.",
           context.awsRequestId,
           event.requestContext.requestId
         );
       }
+
       logger.info("reCAPTCHA validation passed");
     }
     // -------------------------------------------

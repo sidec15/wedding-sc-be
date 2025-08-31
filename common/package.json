@@ -15,10 +15,13 @@
     "luxon": "^3.7.1",
     "winston": "^3.17.0"
   },
+  "peerDependencies": {
+    "@aws-sdk/client-lambda": "^3.637.0"
+  },
   "devDependencies": {
-    "@aws-sdk/client-lambda": "^3.879.0",
     "@types/luxon": "^3.7.1",
     "@types/node": "^24.2.1",
-    "typescript": "^5.9.2"
+    "typescript": "^5.9.2",
+    "@aws-sdk/client-lambda": "^3.637.0"
   }
 }
