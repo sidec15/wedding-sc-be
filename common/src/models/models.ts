@@ -35,3 +35,13 @@ export interface PaginatedResult<T> {
   totalElements: number; // full count for this photoId
   totalPagesCount: number;
 }
+
+
+// Contracts ----------------------------------------
+type CaptchaVerifyResponse = {
+  success: boolean;
+  reason?: 'expired' | 'invalid' | 'duplicate' | 'bad-request' | 'server-error' | 'network-error';
+  errorCodes?: string[];
+  challengeTs?: string;
+  hostname?: string;
+};
