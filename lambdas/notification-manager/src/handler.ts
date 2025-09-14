@@ -29,6 +29,7 @@ const conf = {
   },
   apiDomain:
     process.env.API_DOMAIN || "https://matrimonio.api.chiaraesimone.it",
+  publicSite: process.env.PUBLIC_SITE || "https://matrimonio.chiaraesimone.it",
   ownerEmails: (process.env.OWNER_EMAILS || "").split(","),
 };
 
@@ -94,7 +95,7 @@ const handleCommentCreated = async (event: CommentEvent) => {
   for (const s of subscriptions) {
     const subject = "Matrimonio Chiara & Simone - Nuovo commento";
     const unsubscribeLink = `${conf.apiDomain}/photos/${photoId}/subscriptions/${encodeURIComponent(s.email)}`;
-    const photoLink = `${conf.apiDomain}/our-story?cardId=${encodeURIComponent(s.photoId)}`;
+    const photoLink = `${conf.publicSite}/our-story?cardId=${encodeURIComponent(s.photoId)}`;
     const dt = DateTime.fromISO(comment.createdAt, { zone: "utc" });
     const createdAt = dateTimeUtils.formatItalianDateTime(dt as DateTime<true>);
     const text = createPhotoCommentNotificationText(
